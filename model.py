@@ -56,6 +56,7 @@ class gwnet(nn.Module):
         self.layers = layers
         self.gcn_bool = gcn_bool
         self.addaptadj = addaptadj
+        self.device = device
 
         self.filter_convs = nn.ModuleList()
         self.gate_convs = nn.ModuleList()
@@ -68,6 +69,7 @@ class gwnet(nn.Module):
                                     out_channels=residual_channels,
                                     kernel_size=(1,1))
         self.supports = supports
+        self.adj = None
 
         receptive_field = 1
 
@@ -156,9 +158,11 @@ class gwnet(nn.Module):
             # m2 = torch.tanh(0.25 * self.nodevec2)
             # adp = F.relu(torch.tanh(torch.mm(m1, m2.t()) - torch.mm(m2, m1.t())))
             # adp = F.softmax(F.relu(torch.tanh(torch.mm(m1, m2.t()) - torch.mm(m2, m1.t()))), dim=1)
-            # adp = torch.triu(adp)
             adp = F.softmax(F.relu(torch.mm(self.nodevec1, self.nodevec2)), dim=1)
+            # adp = adp + torch.eye(11).to(self.device)
+            # adp = torch.triu(adp)
             new_supports = self.supports + [adp]
+            self.adj = adp
 
         # WaveNet layers
         for i in range(self.blocks * self.layers):

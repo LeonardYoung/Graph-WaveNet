@@ -248,8 +248,8 @@ if __name__ == "__main__":
     # generate_data('../data/water/mergeAll.h5', '../data/water/genAll')
 
     # 生成单因子数据集
-    # for i in range(9):
-    file_name = merge_one_factor(2)
-    generate_one_factor(file_name,'../data/water/single/2/',24,24)
+    for i in range(9):
+        file_name = merge_one_factor(i)
+        generate_one_factor(file_name,'../data/water/single/'+str(i)+'/',24,24)
 
     # get_adj_file(11,'adjOnes.pkl')
