@@ -141,16 +141,27 @@ def load_adj(pkl_filename, adjtype):
     return sensor_ids, sensor_id_to_ind, adj
 
 
-def load_dataset(dataset_dir, batch_size, valid_batch_size= None, test_batch_size=None):
+def load_dataset(dataset_dir, batch_size, valid_batch_size= None, test_batch_size=None, transf=True):
     data = {}
+
     for category in ['train', 'val', 'test']:
         cat_data = np.load(os.path.join(dataset_dir, category + '.npz'))
         data['x_' + category] = cat_data['x']
         data['y_' + category] = cat_data['y']
-    scaler = StandardScaler(mean=data['x_train'][..., 0].mean(), std=data['x_train'][..., 0].std())
+
+    dimon_len = len(data['x_train'].shape)
+
+    if dimon_len == 2:
+        scaler = StandardScaler(mean=data['x_train'].mean(), std=data['x_train'].std())
+    else:
+        scaler = StandardScaler(mean=data['x_train'][..., 0].mean(), std=data['x_train'][..., 0].std())
     # Data format
-    for category in ['train', 'val', 'test']:
-        data['x_' + category][..., 0] = scaler.transform(data['x_' + category][..., 0])
+    if transf:
+        for category in ['train', 'val', 'test']:
+            if dimon_len == 2:
+                data['x_' + category] = scaler.transform(data['x_' + category])
+            else:
+                data['x_' + category][..., 0] = scaler.transform(data['x_' + category][..., 0])
     data['train_loader'] = DataLoader(data['x_train'], data['y_train'], batch_size)
     data['val_loader'] = DataLoader(data['x_val'], data['y_val'], valid_batch_size)
     data['test_loader'] = DataLoader(data['x_test'], data['y_test'], test_batch_size)

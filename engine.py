@@ -1,9 +1,21 @@
 import torch.optim as optim
 from model import *
 import util
+from utils.better_LSTM import LSTM
+
 class trainer():
-    def __init__(self, scaler, in_dim, seq_length, num_nodes, nhid , dropout, lrate, wdecay, device, supports, gcn_bool, addaptadj, aptinit):
-        self.model = gwnet(device, num_nodes, dropout, supports=supports, gcn_bool=gcn_bool, addaptadj=addaptadj, aptinit=aptinit, in_dim=in_dim, out_dim=seq_length, residual_channels=nhid, dilation_channels=nhid, skip_channels=nhid * 8, end_channels=nhid * 16)
+    def __init__(self, scaler, in_dim, seq_length, num_nodes, nhid , dropout, lrate, wdecay,
+                 device, supports, gcn_bool, addaptadj, aptinit, model_select='gwnet'):
+
+        if model_select == 'LSTM':
+            # pass
+            self.model = LSTM(12,3,dropoutw=0.2)
+            # self.model = betterLSTM()
+        else:
+            self.model = gwnet(device, num_nodes, dropout, supports=supports, gcn_bool=gcn_bool,
+                           addaptadj=addaptadj, aptinit=aptinit,
+                           in_dim=in_dim, out_dim=seq_length, residual_channels=nhid,
+                           dilation_channels=nhid, skip_channels=nhid * 8, end_channels=nhid * 16)
         self.model.to(device)
         self.optimizer = optim.Adam(self.model.parameters(), lr=lrate, weight_decay=wdecay)
         self.loss = util.masked_mae

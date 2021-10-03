@@ -109,6 +109,63 @@ def generate_one_factor(hdf_file, out_dir,seq_length_x=24, seq_length_y=24):
         )
 
 
+def generate_one_site_one_factor(factor_index,site_index,
+                                 seq_length_x=24, seq_length_y=3):
+    hdf_file = 'data/water/single/merge' + str(factor_index) +'.h5'
+    site_names = "abcdefghijklmnopq"
+    out_dir = 'data/water/singlesingle/{}{}'.format(factor_index,site_names[site_index])
+
+    df = pd.read_hdf(hdf_file)
+    df = df.iloc[:,site_index]
+    x_offsets = np.sort(np.concatenate((np.arange(-(seq_length_x - 1), 1, 1),)))
+    y_offsets = np.sort(np.arange(1, (seq_length_y + 1), 1))
+
+    num_samples = len(df)
+    data = np.expand_dims(df.values, axis=-1)
+
+    x, y = [], []
+    min_t = abs(min(x_offsets))
+    max_t = abs(num_samples - abs(max(y_offsets)))  # Exclusive
+    for t in range(min_t, max_t):  # t is the index of the last observation.
+        x.append(data[t + x_offsets, ...])
+        y.append(data[t + y_offsets, ...])
+    x = np.stack(x, axis=0)
+    y = np.stack(y, axis=0)
+
+    x = np.squeeze(x)
+    y = np.squeeze(y)
+
+    print("x shape: ", x.shape, ", y shape: ", y.shape)
+    # Write the data into npz file.
+    num_samples = x.shape[0]
+    num_test = round(num_samples * 0.2)
+    num_train = round(num_samples * 0.7)
+    num_val = num_samples - num_test - num_train
+    x_train, y_train = x[:num_train], y[:num_train]
+    x_val, y_val = (
+        x[num_train: num_train + num_val],
+        y[num_train: num_train + num_val],
+    )
+    x_test, y_test = x[-num_test:], y[-num_test:]
+
+    exi =  os.path.exists(out_dir)
+    if not exi:
+        os.mkdir(out_dir)
+
+    for cat in ["train", "val", "test"]:
+        _x, _y = locals()["x_" + cat], locals()["y_" + cat]
+        print(cat, "x: ", _x.shape, "y:", _y.shape)
+
+        np.savez_compressed(
+            os.path.join(out_dir, f"{cat}.npz"),
+            x=_x,
+            y=_y,
+            x_offsets=x_offsets.reshape(list(x_offsets.shape) + [1]),
+            y_offsets=y_offsets.reshape(list(y_offsets.shape) + [1]),
+        )
+
+
+
 # 生成邻接矩阵的文件
 def get_adj_file(num_nodes,file_name):
 
@@ -247,9 +304,12 @@ if __name__ == "__main__":
     # merge_all_factor('../data/water/water2020.csv', '../data/water/mergeAll.h5')
     # generate_data('../data/water/mergeAll.h5', '../data/water/genAll')
 
-    # 生成单因子数据集
-    for i in range(9):
-        file_name = merge_one_factor(i)
-        generate_one_factor(file_name,'../data/water/single/'+str(i)+'/',24,24)
+    # # 生成单因子数据集
+    # for i in range(9):
+    #     file_name = merge_one_factor(i)
+    #     generate_one_factor(file_name,'../data/water/single/'+str(i)+'/',24,24)
+
+    file_name = merge_one_factor(0)
+    generate_one_factor(file_name, '../data/water/single/' + str(0) + '/', 12, 3)
 
     # get_adj_file(11,'adjOnes.pkl')
