@@ -78,4 +78,5 @@ class LSTM(nn.LSTM):
         self._drop_weights()
         input = self.input_drop(input)
         seq, state = super().forward(input, hx=hx)
-        return self.output_drop(seq), state
+        # return self.output_drop(seq), state
+        return self.output_drop(seq)

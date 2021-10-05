@@ -2,13 +2,8 @@ import util
 import numpy as np
 import torch
 import torch.nn as nn
+import time
 
-
-dataloader = util.load_dataset('data/water/singlesingle/0a',64,64,64,False)
-# Get cpu or gpu device for training.
-torch.cuda.set_device(1)
-device = "cuda:1" if torch.cuda.is_available() else "cpu"
-print("Using {} device".format(device))
 
 # Define model
 # class NeuralNetwork(nn.Module):
@@ -31,7 +26,7 @@ print("Using {} device".format(device))
 # model = NeuralNetwork().to(device)
 
 class lstm(nn.Module):
-    def __init__(self, input_size=24, hidden_size=8, output_size=3, num_layer=1):
+    def __init__(self, input_size=24, output_size=9, hidden_size=64,  num_layer=2):
         super(lstm, self).__init__()
         self.layer1 = nn.LSTM(input_size, hidden_size, num_layer)
         self.layer2 = nn.Linear(hidden_size, output_size)
@@ -44,24 +39,15 @@ class lstm(nn.Module):
         x = x.view(s, b, -1)
         return x
 
-# better LSTM
-# import utils.better_LSTM as better
-# model = better.LSTM(24,3).to(device)
-
-
-model = lstm().to(device)
-model = model.double()
-print(model)
-
-loss_fn = util.masked_mae
-# optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
-optimizer = torch.optim.RMSprop(model.parameters(),lr=0.001)
-# optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 def train(dataloader, model, loss_fn, optimizer):
-    # size = len(dataloader.dataset)
+    #
+    scaler = dataloader['scaler']
+    dataloader['train_loader'].shuffle()
     model.train()
     for batch, (X, y) in enumerate(dataloader['train_loader'].get_iterator()):
+        X = scaler.transform(X)
+
         X = np.expand_dims(X,axis=1)
         y = np.expand_dims(y,axis=1)
         # print(X.shape)
@@ -70,8 +56,10 @@ def train(dataloader, model, loss_fn, optimizer):
 
         # Compute prediction error
         pred = model(X)
+
+        pred_real = scaler.inverse_transform(pred)
         # print(pred.shape)
-        loss = loss_fn(pred, y)
+        loss = loss_fn(pred_real, y)
 
         # Backpropagation
         optimizer.zero_grad()
@@ -81,31 +69,65 @@ def train(dataloader, model, loss_fn, optimizer):
 
 def test(dataloader, model, loss_fn):
     model.eval()
+    scaler = dataloader['scaler']
     loss_list = []
     with torch.no_grad():
         for X, y in dataloader['test_loader'].get_iterator():
+            X = scaler.transform(X)
+
             X = np.expand_dims(X, axis=1)
             y = np.expand_dims(y, axis=1)
 
             X = torch.tensor(X).to(device)
             y = torch.tensor(y).to(device)
 
-
             pred = model(X)
-            loss_list.append(loss_fn(pred, y).item())
+            pred_real = scaler.inverse_transform(pred)
+
+            loss_list.append(loss_fn(pred_real, y).item())
 
     loss_result = np.mean(loss_list)
     return loss_result
 
-import time
-epochs = 1500
-t1 = time.time()
-for t in range(epochs):
-    # print(f"Epoch {t+1}\n-------------------------------")
-    train(dataloader, model, loss_fn, optimizer)
-    loss_result = test(dataloader, model, loss_fn)
-    print("Epoch:{},loss:{}".format(t+1,loss_result))
 
-t2 = time.time()
-print("Total time spent: {:.4f}".format(t2-t1))
+def run_once(site_index, factor_index, input_length,output_length, epochs= 150):
+    print('################################')
+    print('runing site:{},factor:{}'.format(site_index,factor_index))
+    site_code = "abcdefghijklmn"
+    dataloader = util.load_dataset('data/water/singlesingle/{}{}'.format(factor_index,site_code[site_index]),
+                                   64, 64, 64, False)
 
+    model = lstm(input_length, output_length).to(device)
+    model = model.double()
+
+    loss_fn = util.masked_mae
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
+    for t in range(epochs):
+        # print(f"Epoch {t+1}\n-------------------------------")
+        train(dataloader, model, nn.MSELoss(), optimizer)
+        loss_result = test(dataloader, model, loss_fn)
+        if t % 10 == 9:
+            print("Epoch:{},loss:{}".format(t + 1, loss_result))
+
+    return loss_result
+
+
+if __name__ == '__main__':
+    # Get cpu or gpu device for training.
+    torch.cuda.set_device(1)
+    device = "cuda:1" if torch.cuda.is_available() else "cpu"
+    print("Using {} device".format(device))
+
+    t1 = time.time()
+    all_site_result = []
+    for site in range(11):
+        res = run_once(site,0,24,9,150)
+        all_site_result.append(res)
+
+    t2 = time.time()
+    all_mean = np.mean(all_site_result)
+    for site in range(len(all_site_result)):
+        print("site:{},result:{:.4f}".format(site,all_site_result[site]))
+    print("all_mean={}".format(all_mean))
+    print("Total time spent: {:.4f}".format(t2 - t1))

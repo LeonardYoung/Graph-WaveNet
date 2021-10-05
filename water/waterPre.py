@@ -111,9 +111,9 @@ def generate_one_factor(hdf_file, out_dir,seq_length_x=24, seq_length_y=24):
 
 def generate_one_site_one_factor(factor_index,site_index,
                                  seq_length_x=24, seq_length_y=3):
-    hdf_file = 'data/water/single/merge' + str(factor_index) +'.h5'
+    hdf_file = '../data/water/single/merge' + str(factor_index) +'.h5'
     site_names = "abcdefghijklmnopq"
-    out_dir = 'data/water/singlesingle/{}{}'.format(factor_index,site_names[site_index])
+    out_dir = '../data/water/singlesingle/{}{}'.format(factor_index,site_names[site_index])
 
     df = pd.read_hdf(hdf_file)
     df = df.iloc[:,site_index]
@@ -309,7 +309,12 @@ if __name__ == "__main__":
     #     file_name = merge_one_factor(i)
     #     generate_one_factor(file_name,'../data/water/single/'+str(i)+'/',24,24)
 
-    file_name = merge_one_factor(0)
-    generate_one_factor(file_name, '../data/water/single/' + str(0) + '/', 12, 3)
+    # 全站点单因子
+    # file_name = merge_one_factor(0)
+    # generate_one_factor(file_name, '../data/water/single/' + str(0) + '/', 12, 3)
+
+    # 单站点单因子
+    for site in range(11):
+        generate_one_site_one_factor(0,site,24,9)
 
     # get_adj_file(11,'adjOnes.pkl')
