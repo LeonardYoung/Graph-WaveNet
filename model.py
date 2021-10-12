@@ -13,6 +13,7 @@ class nconv(nn.Module):
         x = torch.einsum('ncvl,vw->ncwl',(x,A))
         return x.contiguous()
 
+
 class linear(nn.Module):
     def __init__(self,c_in,c_out):
         super(linear,self).__init__()
@@ -94,9 +95,6 @@ class gwnet(nn.Module):
                 self.nodevec2 = nn.Parameter(initemb2, requires_grad=True).to(device)
                 self.supports_len += 1
 
-
-
-
         for b in range(blocks):
             additional_scope = kernel_size - 1
             new_dilation = 1
@@ -126,8 +124,6 @@ class gwnet(nn.Module):
                 if self.gcn_bool:
                     self.gconv.append(gcn(dilation_channels,residual_channels,dropout,support_len=self.supports_len))
 
-
-
         self.end_conv_1 = nn.Conv2d(in_channels=skip_channels,
                                   out_channels=end_channels,
                                   kernel_size=(1,1),
@@ -139,8 +135,6 @@ class gwnet(nn.Module):
                                     bias=True)
 
         self.receptive_field = receptive_field
-
-
 
     def forward(self, input):
         in_len = input.size(3)

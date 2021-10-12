@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import time
-
+from utils import earlystopping
 
 # Define model
 # class NeuralNetwork(nn.Module):
@@ -67,8 +67,32 @@ def train(dataloader, model, loss_fn, optimizer):
         optimizer.step()
 
 
-def test(dataloader, model, loss_fn):
+def validate(dataloader, model, loss_fn):
     model.eval()
+    scaler = dataloader['scaler']
+    loss_list = []
+    with torch.no_grad():
+        for X, y in dataloader['val_loader'].get_iterator():
+            X = scaler.transform(X)
+
+            X = np.expand_dims(X, axis=1)
+            y = np.expand_dims(y, axis=1)
+
+            X = torch.tensor(X).to(device)
+            y = torch.tensor(y).to(device)
+
+            pred = model(X)
+            pred_real = scaler.inverse_transform(pred)
+
+            loss_list.append(loss_fn(pred_real, y).item())
+
+    loss_result = np.mean(loss_list)
+    return loss_result
+
+
+def test(dataloader,model_save_path, model, loss_fn):
+    model.eval()
+    model.load_state_dict(torch.load(model_save_path))
     scaler = dataloader['scaler']
     loss_list = []
     with torch.no_grad():
@@ -90,7 +114,7 @@ def test(dataloader, model, loss_fn):
     return loss_result
 
 
-def run_once(site_index, factor_index, input_length,output_length, epochs= 150):
+def run_once(site_index, factor_index,early_stopping,model_save_path, input_length,output_length, epochs= 150):
     print('################################')
     print('runing site:{},factor:{}'.format(site_index,factor_index))
     site_code = "abcdefghijklmn"
@@ -106,10 +130,15 @@ def run_once(site_index, factor_index, input_length,output_length, epochs= 150):
     for t in range(epochs):
         # print(f"Epoch {t+1}\n-------------------------------")
         train(dataloader, model, nn.MSELoss(), optimizer)
-        loss_result = test(dataloader, model, loss_fn)
+        loss_result = validate(dataloader, model, loss_fn)
         if t % 10 == 9:
-            print("Epoch:{},loss:{}".format(t + 1, loss_result))
+            print("Epoch:{},validate loss:{}".format(t + 1, loss_result))
+        early_stopping(loss_result, model)
+        if early_stopping.early_stop:
+            print("Early stopping.")
+            break
 
+    loss_result = test(dataloader,model_save_path, model, loss_fn)
     return loss_result
 
 
@@ -118,16 +147,35 @@ if __name__ == '__main__':
     torch.cuda.set_device(1)
     device = "cuda:1" if torch.cuda.is_available() else "cpu"
     print("Using {} device".format(device))
+    model_save_path = "./data/save_models/simpleLSTM/LSTM.pth"
 
+    ####################### 单因子
+    # early_stopping = earlystopping.EarlyStopping(patience=30, path=model_save_path, verbose=True)
+    # res = run_once(10, 0, early_stopping,model_save_path, 24, 9, 150)
+    # print("test MAE = {}".format(res))
+
+    ######################## 全站点 全因子实验
     t1 = time.time()
-    all_site_result = []
-    for site in range(11):
-        res = run_once(site,0,24,9,150)
-        all_site_result.append(res)
+    all_factor_result = []
+    for factor in range(9):
+        site_result = []
+        for site in range(11):
+            early_stopping = earlystopping.EarlyStopping(patience=40, path=model_save_path, verbose=True)
+            res = run_once(site, factor,early_stopping,model_save_path,24,9,150)
+            site_result.append(res)
+        all_factor_result.append(site_result)
 
     t2 = time.time()
-    all_mean = np.mean(all_site_result)
-    for site in range(len(all_site_result)):
-        print("site:{},result:{:.4f}".format(site,all_site_result[site]))
-    print("all_mean={}".format(all_mean))
+
+    print("--------------------------------------------------")
+    for factor in range(len(all_factor_result)):
+        line = "factor:{}  ".format(factor)
+        for site in range(len(all_factor_result[factor])):
+            line += "{:.4f},".format(all_factor_result[factor][site])
+        print(line)
+
+        factor_mean = np.mean(all_factor_result[factor])
+
+        print("factor_mean={:.4f}".format(factor_mean))
+        print("---------")
     print("Total time spent: {:.4f}".format(t2 - t1))
