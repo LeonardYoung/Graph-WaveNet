@@ -37,4 +37,3 @@ python generate_training_data.py --output_dir=data/PEMS-BAY --traffic_df_filenam
 python train.py --gcn_bool --adjtype doubletransition --addaptadj  --randomadj
 ```
 
-

@@ -1,15 +1,14 @@
 import torch.optim as optim
 from model import *
 import util
-from utils.better_LSTM import LSTM
 
 class trainer():
     def __init__(self, scaler, in_dim, seq_length, num_nodes, nhid , dropout, lrate, wdecay,
                  device, supports, gcn_bool, addaptadj, aptinit, model_select='gwnet'):
 
         if model_select == 'LSTM':
-            # pass
-            self.model = LSTM(12,3,dropoutw=0.2)
+            print('not support!!!!!!!!!!!!!!!!!!!!LSTM')
+            # self.model = LSTM(12,3,dropoutw=0.2)
             # self.model = betterLSTM()
         else:
             self.model = gwnet(device, num_nodes, dropout, supports=supports, gcn_bool=gcn_bool,
@@ -21,6 +20,7 @@ class trainer():
         self.loss = util.masked_mae
         self.scaler = scaler
         self.clip = 5
+        self.device = device
 
     def train(self, input, real_val):
         self.model.train()
