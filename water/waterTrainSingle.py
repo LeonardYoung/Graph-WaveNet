@@ -75,31 +75,32 @@ def test(engine,dataloader,model_path):
     amae = []
     amape = []
     armse = []
-    for i in range(args.seq_length):
-        pred = scaler.inverse_transform(yhat[:, :, i])
-        real = realy[:, :, i]
+    for i in range(args.num_nodes):
+        pred = scaler.inverse_transform(yhat[:, i, :])
+        real = realy[:, i, :]
         metrics = util.metric(pred, real)
-        log = 'Evaluate best model on test data for horizon {:d}, Test MAE: {:.4f}, Test MAPE: {:.4f}, Test RMSE: {:.4f}'
+        log = 'Evaluate model on site {:d} , Test MAE: {:.4f}, Test MAPE: {:.4f}, Test RMSE: {:.4f}'
         print(log.format(i + 1, metrics[0], metrics[1], metrics[2]))
         amae.append(metrics[0])
         amape.append(metrics[1])
         armse.append(metrics[2])
 
-    log = 'On average over 12 horizons, Test MAE: {:.4f}, Test MAPE: {:.4f}, Test RMSE: {:.4f}'
+    log = 'On average over all site, Test MAE: {:.4f}, Test MAPE: {:.4f}, Test RMSE: {:.4f}'
     print(log.format(np.mean(amae), np.mean(amape), np.mean(armse)))
 
 
 def main():
-    #set seed
-    #torch.manual_seed(args.seed)
-    #np.random.seed(args.seed)
+    # set seed
+    # torch.manual_seed(args.seed)
+    # np.random.seed(args.seed)
 
-    #load data
+    # load data
     device = torch.device(args.device)
     sensor_ids, sensor_id_to_ind, adj_mx = util.load_adj(args.adjdata,args.adjtype)
     dataloader = util.load_dataset(args.data, args.batch_size, args.batch_size, args.batch_size)
     scaler = dataloader['scaler']
-    supports = [torch.tensor(i).to(device) for i in adj_mx]
+    supports = [torch.tensor(i).to(device).to(torch.float32) for i in adj_mx]
+    # supports = [adj_mx[-1]]
 
     print(args)
 
@@ -108,8 +109,10 @@ def main():
     else:
         adjinit = supports[0]
 
-    if args.aptonly:
-        supports = None
+    # 只保留初始矩阵
+    supports = [supports[-1]]
+    # if args.aptonly:
+    #     supports = None
 
     model_save_path = "./data/save_models/singFactor/waveNet.pth"
     early_stopping = earlystopping.EarlyStopping(patience=20, path=model_save_path, verbose=True)

@@ -22,14 +22,45 @@ class linear(nn.Module):
     def forward(self,x):
         return self.mlp(x)
 
-class gcn(nn.Module):
-    def __init__(self,c_in,c_out,dropout,support_len=3,order=2):
+
+class gcnWeight(nn.Module):
+    def __init__(self,c_in,c_out,dropout,support_len,order,num_nodes,device):
         super(gcn,self).__init__()
         self.nconv = nconv()
         c_in = (order*support_len+1)*c_in
         self.mlp = linear(c_in,c_out)
         self.dropout = dropout
         self.order = order
+        self.weight = nn.Parameter(torch.randn(num_nodes, 11).to(device), requires_grad=True).to(device)
+
+    def forward(self,x,support):
+        out = [x]
+        for a in support:
+            wa = torch.mm(self.weight,a)
+            # wa = a * self.weight
+            x1 = self.nconv(x,wa)
+            out.append(x1)
+            for k in range(2, self.order + 1):
+                x2 = self.nconv(x1,wa)
+                out.append(x2)
+                x1 = x2
+
+        h = torch.cat(out,dim=1)
+        h = self.mlp(h)
+        h = F.dropout(h, self.dropout, training=self.training)
+        return h
+
+
+class gcn(nn.Module):
+    def __init__(self,c_in,c_out,dropout,support_len,order,num_nodes,device):
+        super(gcn,self).__init__()
+        self.nconv = nconv()
+        c_in = (order*support_len+1)*c_in
+        self.mlp = linear(c_in,c_out)
+        self.dropout = dropout
+        self.order = order
+        # self.nodevec1 = nn.Parameter(torch.randn(num_nodes, 11).to(device), requires_grad=True).to(device)
+        self.weight = nn.Parameter(torch.randn(num_nodes, 11).to(device), requires_grad=True).to(device)
 
     def forward(self,x,support):
         out = [x]
@@ -71,6 +102,7 @@ class gwnet(nn.Module):
                                     kernel_size=(1,1))
         self.supports = supports
         self.adj = None
+        # self.origin_adj = supports[-1]
 
         receptive_field = 1
 
@@ -122,7 +154,8 @@ class gwnet(nn.Module):
                 receptive_field += additional_scope
                 additional_scope *= 2
                 if self.gcn_bool:
-                    self.gconv.append(gcn(dilation_channels,residual_channels,dropout,support_len=self.supports_len))
+                    self.gconv.append(gcn(dilation_channels,residual_channels,dropout,
+                                          support_len=self.supports_len,order=3,num_nodes=num_nodes,device=device))
 
         self.end_conv_1 = nn.Conv2d(in_channels=skip_channels,
                                   out_channels=end_channels,

@@ -185,7 +185,19 @@ def get_adj_file(num_nodes,file_name):
     #     '程溪下庄工业区水质监测点': 9,
     #     '芗城水利局站': 10,
     # }
-    adj = np.ones([num_nodes, num_nodes])
+    # num_node = 5
+
+    # # 生成邻接矩阵，对角矩阵+最后一列全为1
+    # x = [1.0 for _ in range(num_nodes)]
+    # adj = np.diag(x)
+    # adj[:, num_nodes - 1] = 1
+
+    adj_df = pd.read_csv('../data/water/adjs/adj_shangban2.csv')
+    adj_df = adj_df.fillna(0)
+    adj_df = adj_df.iloc[:, 1:]
+    adj = adj_df.values
+
+    # adj = np.eye([num_nodes, num_nodes])
     pickle_data = [ids, id_to_inc, adj]
     import pickle
     with open('../data/water/adjs/' + file_name, "wb") as myprofile:
@@ -305,17 +317,17 @@ if __name__ == "__main__":
     # generate_data('../data/water/mergeAll.h5', '../data/water/genAll')
 
     # 生成单因子数据集
-    for i in range(9):
-        file_name = merge_one_factor(i)
-        generate_one_factor(file_name,'../data/water/single/'+str(i)+'/',24,9)
-
+    # for i in range(9):
+    #     file_name = merge_one_factor(i)
+    #     generate_one_factor(file_name,'../data/water/single/'+str(i)+'/',24,9)
     # 全站点单因子
     # file_name = merge_one_factor(0)
     # generate_one_factor(file_name, '../data/water/single/' + str(0) + '/', 12, 3)
 
-    ###### 单站点单因子
+
+    ###### 生成单站点单因子数据集
     # for site in range(11):
     #     for factor in range(9):
     #         generate_one_site_one_factor(factor,site,24,9)
 
-    # get_adj_file(11,'adjOnes.pkl')
+    get_adj_file(11,'adj_shangban2.pkl')

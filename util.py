@@ -132,7 +132,7 @@ def load_adj(pkl_filename, adjtype):
     elif adjtype == "transition":
         adj = [asym_adj(adj_mx)]
     elif adjtype == "doubletransition":
-        adj = [asym_adj(adj_mx), asym_adj(np.transpose(adj_mx))]
+        adj = [asym_adj(adj_mx), asym_adj(np.transpose(adj_mx)),adj_mx]
     elif adjtype == "identity":
         adj = [np.diag(np.ones(adj_mx.shape[0])).astype(np.float32)]
     else:
