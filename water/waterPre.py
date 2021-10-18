@@ -3,8 +3,11 @@ import numpy as np
 import os
 
 # 按照上下游顺序
-ids = [ '天宝大水港排涝站','中排渠涝站（天宝）',
-             '程溪下庄工业区水质监测点', '甘棠溪慧民花园监测点',
+# ids = [ '天宝大水港排涝站','中排渠涝站（天宝）',
+#              '程溪下庄工业区水质监测点', '甘棠溪慧民花园监测点',
+#         '康山溪金峰花园监测点', '芗城水利局站','中山桥水闸站', '北京路水闸站','九湖监测点','桂林排涝站','上坂']
+ids_shangban = [ '天宝大水港排涝站','中排渠涝站（天宝）',
+              '甘棠溪慧民花园监测点',
         '康山溪金峰花园监测点', '芗城水利局站','中山桥水闸站', '北京路水闸站','九湖监测点','桂林排涝站','上坂']
 
 # 表格中的顺序
@@ -12,10 +15,10 @@ factors = ['pH值', '总氮', '总磷', '氨氮', '水温', '浑浊度', '溶解
 
 
 # 横向合并一个因子，保存为h5
-def merge_one_factor(inc = 0):
-    df = pd.read_csv('../data/water/water2020.csv', usecols=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
+def merge_one_factor(input_file, inc ,out_dir):
+    df = pd.read_csv(input_file, usecols=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
     merge = None
-    for site in ids:
+    for site in ids_shangban:
         one = df.loc[df['站点名称'] == site]
         one.columns = ['time', 'site'] + [site + str(i) for i in range(9)]
         one = one[['time'] + [site + str(inc)]]
@@ -24,8 +27,10 @@ def merge_one_factor(inc = 0):
         else:
             merge = pd.merge(merge, one, on='time')
     merge.set_index(keys='time', inplace=True)
-    file_name = '../data/water/single/merge' + str(inc) +'.h5'
+    # file_name = '../data/water/single/merge' + str(inc) +'.h5'
+    file_name = out_dir + '/singleFac/merge' + str(inc) +'.h5'
     merge.to_hdf(file_name, key='merge', index=False)
+    # E:\project\mvp\Graph-WaveNet\data\water\上坂\singleFac
     return file_name
 
 
@@ -109,11 +114,12 @@ def generate_one_factor(hdf_file, out_dir,seq_length_x=24, seq_length_y=24):
         )
 
 
-def generate_one_site_one_factor(factor_index,site_index,
+def generate_one_site_one_factor(root_dir, factor_index,site_index,
                                  seq_length_x=24, seq_length_y=3):
-    hdf_file = '../data/water/single/merge' + str(factor_index) +'.h5'
+    hdf_file = root_dir + '/singleFac/merge' + str(factor_index) +'.h5'
     site_names = "abcdefghijklmnopq"
-    out_dir = '../data/water/singlesingle/{}{}'.format(factor_index,site_names[site_index])
+
+    out_dir = root_dir + '/singlesingle/{}{}'.format(factor_index,site_names[site_index])
 
     df = pd.read_hdf(hdf_file)
     df = df.iloc[:,site_index]
@@ -122,6 +128,7 @@ def generate_one_site_one_factor(factor_index,site_index,
 
     num_samples = len(df)
     data = np.expand_dims(df.values, axis=-1)
+    print("data shape:{}".format(data.shape))
 
     x, y = [], []
     min_t = abs(min(x_offsets))
@@ -141,6 +148,7 @@ def generate_one_site_one_factor(factor_index,site_index,
     num_test = round(num_samples * 0.2)
     num_train = round(num_samples * 0.7)
     num_val = num_samples - num_test - num_train
+    print("num sample,train,val,test={},{},{},{}".format(num_samples,num_train,num_val,num_test))
     x_train, y_train = x[:num_train], y[:num_train]
     x_val, y_val = (
         x[num_train: num_train + num_val],
@@ -148,7 +156,7 @@ def generate_one_site_one_factor(factor_index,site_index,
     )
     x_test, y_test = x[-num_test:], y[-num_test:]
 
-    exi =  os.path.exists(out_dir)
+    exi = os.path.exists(out_dir)
     if not exi:
         os.mkdir(out_dir)
 
@@ -170,8 +178,8 @@ def generate_one_site_one_factor(factor_index,site_index,
 def get_adj_file(num_nodes,file_name):
 
     id_to_inc = {}
-    for i in range(len(ids)):
-        id_to_inc[ids[i]] = i
+    for i in range(len(ids_shangban)):
+        id_to_inc[ids_shangban[i]] = i
     # id_to_inc = {
     #     '上坂': 0,
     #     '中山桥水闸站': 1,
@@ -198,7 +206,7 @@ def get_adj_file(num_nodes,file_name):
     adj = adj_df.values
 
     # adj = np.eye([num_nodes, num_nodes])
-    pickle_data = [ids, id_to_inc, adj]
+    pickle_data = [ids_shangban, id_to_inc, adj]
     import pickle
     with open('../data/water/adjs/' + file_name, "wb") as myprofile:
         pickle.dump(pickle_data, myprofile)
@@ -316,18 +324,22 @@ if __name__ == "__main__":
     # merge_all_factor('../data/water/water2020.csv', '../data/water/mergeAll.h5')
     # generate_data('../data/water/mergeAll.h5', '../data/water/genAll')
 
-    # 生成单因子数据集
+    # ####### 生成单因子数据集
     # for i in range(9):
-    #     file_name = merge_one_factor(i)
-    #     generate_one_factor(file_name,'../data/water/single/'+str(i)+'/',24,9)
-    # 全站点单因子
-    # file_name = merge_one_factor(0)
-    # generate_one_factor(file_name, '../data/water/single/' + str(0) + '/', 12, 3)
+    #     file_name = merge_one_factor('../data/water/shangban/water2020_near.csv',i,'../data/water/shangban')
+    #     # generate_one_factor(file_name,'../data/water/shangban/single/'+str(i)+'/',24,9)
+    # # 全站点单因子
+    # # file_name = merge_one_factor(0)
+    # # generate_one_factor(file_name, '../data/water/single/' + str(0) + '/', 12, 3)
 
 
-    ###### 生成单站点单因子数据集
-    # for site in range(11):
-    #     for factor in range(9):
-    #         generate_one_site_one_factor(factor,site,24,9)
+    # #### 生成单站点单因子数据集
+    for i in range(len(factors)):
+        file_name = merge_one_factor('../data/water/shangban/water2020_linear.csv',i,'../data/water/shangban')
+    for site in range(len(ids_shangban)):
+        for factor in range(len(factors)):
+            generate_one_site_one_factor('../data/water/shangban', factor,site,24,3)
 
-    get_adj_file(11,'adj_shangban2.pkl')
+
+
+    # get_adj_file(11,'adj_shangban2.pkl')

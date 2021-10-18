@@ -14,6 +14,7 @@ class DataLoader(object):
         :param batch_size:
         :param pad_with_last_sample: pad with the last sample to make number of samples divisible to batch_size.
         """
+        self.origin_xs,self.origin_ys = xs,ys
         self.batch_size = batch_size
         self.current_ind = 0
         if pad_with_last_sample:
@@ -26,6 +27,9 @@ class DataLoader(object):
         self.num_batch = int(self.size // self.batch_size)
         self.xs = xs
         self.ys = ys
+
+    def get_origin(self):
+        return self.origin_xs,self.origin_ys
 
     def shuffle(self):
         permutation = np.random.permutation(self.size)
