@@ -34,6 +34,61 @@ def merge_one_factor(input_file, inc ,out_dir):
     return file_name
 
 
+def generate_multi_factor(input_file,root_dir,include_site,include_factor,seq_length_x,seq_length_y):
+    # ##########def
+    # 筛选因子
+    cols = [i + 3 for i in include_factor]
+    cols = [1, 2] + cols
+
+    df = pd.read_csv(input_file, usecols=cols)
+    merge = None
+    for site in include_site:
+        one = df.loc[df['站点名称'] == site]
+        one.columns = ['time', 'site'] + [site + factors[i] for i in include_factor]
+        one.drop(columns=['site'], axis=1, inplace=True)
+        merge = one if merge is None else pd.merge(merge, one, on='time')
+
+    merge.set_index(keys='time', inplace=True)
+
+    exi = os.path.exists(root_dir)
+    if not exi:
+        os.mkdir(root_dir)
+    # 保存
+    merge.to_csv(root_dir+'/data.csv', encoding='utf_8_sig')
+
+    x_offsets = np.sort(np.concatenate((np.arange(-(seq_length_x - 1), 1, 1),)))
+    y_offsets = np.sort(np.arange(1, (seq_length_y + 1), 1))
+    x, y = generate_graph_seq2seq_io_data(
+        merge,
+        x_offsets=x_offsets,
+        y_offsets=y_offsets,
+        add_time_in_day=True,
+    )
+    print("x shape: ", x.shape, ", y shape: ", y.shape)
+    # Write the data into npz file.
+    num_samples = x.shape[0]
+    num_test = round(num_samples * 0.2)
+    num_train = round(num_samples * 0.7)
+    num_val = num_samples - num_test - num_train
+    x_train, y_train = x[:num_train], y[:num_train]
+    x_val, y_val = (
+        x[num_train: num_train + num_val],
+        y[num_train: num_train + num_val],
+    )
+    x_test, y_test = x[-num_test:], y[-num_test:]
+
+    for cat in ["train", "val", "test"]:
+        _x, _y = locals()["x_" + cat], locals()["y_" + cat]
+        print(cat, "x: ", _x.shape, "y:", _y.shape)
+        np.savez_compressed(
+            os.path.join(root_dir+'/', f"{cat}.npz"),
+            x=_x,
+            y=_y,
+            x_offsets=x_offsets.reshape(list(x_offsets.shape) + [1]),
+            y_offsets=y_offsets.reshape(list(y_offsets.shape) + [1]),
+        )
+
+
 def generate_graph_seq2seq_io_data(
         df, x_offsets, y_offsets, add_time_in_day=True, add_day_in_week=False, scaler=None
 ):
@@ -74,9 +129,12 @@ def generate_graph_seq2seq_io_data(
     return x, y
 
 
-def generate_one_factor(hdf_file, out_dir,seq_length_x=24, seq_length_y=24):
+def generate_dataset(hdf_file, out_dir,seq_length_x=24, seq_length_y=24):
     # seq_length_x, seq_length_y = 24, 24
     df = pd.read_hdf(hdf_file)
+    exi = os.path.exists(out_dir)
+    if not exi:
+        os.mkdir(out_dir)
     # 0 is the latest observed sample.
     x_offsets = np.sort(np.concatenate((np.arange(-(seq_length_x - 1), 1, 1),)))
     # Predict the next one hour
@@ -173,9 +231,8 @@ def generate_one_site_one_factor(root_dir, factor_index,site_index,
         )
 
 
-
 # 生成邻接矩阵的文件
-def get_adj_file(num_nodes,file_name):
+def get_adj_file(root_dir,num_nodes,file_name):
 
     id_to_inc = {}
     for i in range(len(ids_shangban)):
@@ -195,20 +252,21 @@ def get_adj_file(num_nodes,file_name):
     # }
     # num_node = 5
 
-    # # 生成邻接矩阵，对角矩阵+最后一列全为1
-    # x = [1.0 for _ in range(num_nodes)]
-    # adj = np.diag(x)
-    # adj[:, num_nodes - 1] = 1
+    # 生成邻接矩阵，对角矩阵
+    x = [8.0 for _ in range(num_nodes)]
+    adj = np.diag(x)
+    ones = np.ones([num_nodes, num_nodes])
+    adj = adj + ones
 
-    adj_df = pd.read_csv('../data/water/adjs/adj_shangban2.csv')
-    adj_df = adj_df.fillna(0)
-    adj_df = adj_df.iloc[:, 1:]
-    adj = adj_df.values
+    # adj_df = pd.read_csv(root_dir + '/adjs/adj_shangban2.csv')
+    # adj_df = adj_df.fillna(0)
+    # adj_df = adj_df.iloc[:, 1:]
+    # adj = adj_df.values
 
     # adj = np.eye([num_nodes, num_nodes])
     pickle_data = [ids_shangban, id_to_inc, adj]
     import pickle
-    with open('../data/water/adjs/' + file_name, "wb") as myprofile:
+    with open(root_dir + '/adjs/' + file_name, "wb") as myprofile:
         pickle.dump(pickle_data, myprofile)
 
 
@@ -324,22 +382,24 @@ if __name__ == "__main__":
     # merge_all_factor('../data/water/water2020.csv', '../data/water/mergeAll.h5')
     # generate_data('../data/water/mergeAll.h5', '../data/water/genAll')
 
-    # ####### 生成单因子数据集
+    # # ####### 单因子数据集
     # for i in range(9):
-    #     file_name = merge_one_factor('../data/water/shangban/water2020_near.csv',i,'../data/water/shangban')
-    #     # generate_one_factor(file_name,'../data/water/shangban/single/'+str(i)+'/',24,9)
-    # # 全站点单因子
-    # # file_name = merge_one_factor(0)
-    # # generate_one_factor(file_name, '../data/water/single/' + str(0) + '/', 12, 3)
+    #     file_name = merge_one_factor('../data/water/shangban/water2020_linear_no_strange.csv',i,'../data/water/shangban')
+    #     generate_dataset(file_name,'../data/water/shangban/singleFac/'+str(i)+'/',24,3)
 
 
     # #### 生成单站点单因子数据集
-    for i in range(len(factors)):
-        file_name = merge_one_factor('../data/water/shangban/water2020_linear.csv',i,'../data/water/shangban')
-    for site in range(len(ids_shangban)):
-        for factor in range(len(factors)):
-            generate_one_site_one_factor('../data/water/shangban', factor,site,24,3)
+    # for i in range(len(factors)):
+    #     file_name = merge_one_factor('../data/water/shangban/water2020_linear_no_strange.csv',i,'../data/water/shangban')
+    # for site in range(len(ids_shangban)):
+    #     for factor in range(len(factors)):
+    #         generate_one_site_one_factor('../data/water/shangban', factor,site,24,3)
 
 
+    #### 生成多因子数据集（每个因子是一个节点）
+    generate_multi_factor('../data/water/shangban/water2020_linear_no_strange.csv','../data/water/shangban/multiFac',
+                          ids_shangban,[0,1,2,3,8],
+                          24,3)
 
-    # get_adj_file(11,'adj_shangban2.pkl')
+    get_adj_file('../data/water/shangban', 50,'adj_50_8eye_one.pkl')
+    pass

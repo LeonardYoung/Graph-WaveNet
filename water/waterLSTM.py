@@ -99,7 +99,8 @@ def test(dataloader,model_save_path, model, loss_fn):
     model.eval()
     model.load_state_dict(torch.load(model_save_path))
     scaler = dataloader['scaler']
-    loss_list = []
+    mae_list = []
+    mape_list = []
     with torch.no_grad():
         for X, y in dataloader['test_loader'].get_iterator():
             X = scaler.transform(X)
@@ -113,10 +114,14 @@ def test(dataloader,model_save_path, model, loss_fn):
             pred = model(X)
             pred_real = scaler.inverse_transform(pred)
 
-            loss_list.append(loss_fn(pred_real, y).item())
+            metrics = util.metric(pred_real, y)
 
-    loss_result = np.mean(loss_list)
-    return loss_result
+            # MAE
+            mae_list.append(metrics[0])
+            # MAPE
+            mape_list.append(metrics[1])
+
+    return np.mean(mae_list),np.mean(mape_list)
 
 
 def pred_save(dataloader,model_save_path, model, output_file):
@@ -237,8 +242,14 @@ factors = ['pH值', '总氮', '总磷', '氨氮', '水温', '浑浊度', '溶解
 if __name__ == '__main__':
     # Get cpu or gpu device for training.
     print('start train...')
-    torch.cuda.set_device(1)
-    device = "cuda:1" if torch.cuda.is_available() else "cpu"
+    # torch.cuda.set_device(1)
+    # device = "cuda:1" if torch.cuda.is_available() else "cpu"
+    if torch.cuda.is_available():
+        device = "cuda:1"
+        torch.cuda.set_device(1)
+    else:
+        device = "cpu"
+
     print("Using {} device".format(device))
     model_save_path = "./data/save_models/simpleLSTM/LSTM.pth"
 
@@ -246,34 +257,40 @@ if __name__ == '__main__':
     predict_size = 3
     train_epoch = 150
 
-    ####################### 单因子
-    early_stopping = earlystopping.EarlyStopping(patience=30, path=model_save_path, verbose=True)
-    res = run_once('data/water/shangban',2, 7, early_stopping,model_save_path, input_size,predict_size,train_epoch,True)
-    print("test MAE = {}".format(res))
-    ######################## 全站点 全因子实验
-    # t1 = time.time()
-    # all_factor_result = []
-    # for factor in range(9):
-    #     site_result = []
-    #     for site in range(10):
-    #         early_stopping = earlystopping.EarlyStopping(patience=30, path=model_save_path, verbose=True)
-    #         res = run_once('data/water/shangban', site, factor,early_stopping,
-    #                        model_save_path,input_size,predict_size,train_epoch)
-    #         site_result.append(res)
-    #     all_factor_result.append(site_result)
-    #
-    # t2 = time.time()
-    #
-    # print("--------------------------------------------------")
-    # for factor in range(len(all_factor_result)):
-    #     line = "{},".format(factors[factor])
-    #     for site in range(len(all_factor_result[factor])):
-    #         line += "{:.4f},".format(all_factor_result[factor][site])
-    #     # print(line)
-    #
-    #     factor_mean = np.mean(all_factor_result[factor])
-    #
-    #     print(line + "{:.4f}".format(factor_mean))
-    #     # print("---------")
+    # ###################### 单因子
+    # early_stopping = earlystopping.EarlyStopping(patience=30, path=model_save_path, verbose=True)
+    # res = run_once('data/water/shangban',2, 6, early_stopping,model_save_path, input_size,predict_size,train_epoch,True)
+    # print("test MAE = {},MAPE={}".format(res[0],res[1]))
+    # ####################### 全站点 全因子实验
+    t1 = time.time()
+    all_factor_result = []
+    for factor in range(9):
+        site_result = []
+        for site in range(10):
+            early_stopping = earlystopping.EarlyStopping(patience=30, path=model_save_path, verbose=True)
+            res = run_once('data/water/shangban', site, factor,early_stopping,
+                           model_save_path,input_size,predict_size,train_epoch,True)
+            site_result.append(res)
+        all_factor_result.append(site_result)
+
+    t2 = time.time()
+
+    # 打印结果
+    print("-------------------MAE-------------------------------")
+    for factor in range(len(all_factor_result)):
+        line = "{},".format(factors[factor])
+        for site in range(len(all_factor_result[factor])):
+            # print(all_factor_result[factor][site])
+            line += "{:.4f},".format(all_factor_result[factor][site][0])
+        # factor_mean = np.mean(all_factor_result[factor][:][0])
+        # print(line + "{:.4f}".format(factor_mean))
+        # print(all_factor_result[factor][:][0])
+        print(line)
     # print("Total time spent: {:.4f}".format(t2 - t1))
+    print("--------------------MAPE------------------------------")
+    for factor in range(len(all_factor_result)):
+        line = "{},".format(factors[factor])
+        for site in range(len(all_factor_result[factor])):
+            line += "{:.4f},".format(all_factor_result[factor][site][1])
+        print(line)
     #########################

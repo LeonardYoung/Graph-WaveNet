@@ -111,15 +111,14 @@ class gwnet(nn.Module):
             self.supports_len += len(supports)
 
         if gcn_bool and addaptadj:
+            if supports is None:
+                self.supports = []
             if aptinit is None:
-                if supports is None:
-                    self.supports = []
-                self.nodevec1 = nn.Parameter(torch.randn(num_nodes, 11).to(device), requires_grad=True).to(device)
-                self.nodevec2 = nn.Parameter(torch.randn(11, num_nodes).to(device), requires_grad=True).to(device)
+
+                self.nodevec1 = nn.Parameter(torch.randn(num_nodes, 50).to(device), requires_grad=True).to(device)
+                self.nodevec2 = nn.Parameter(torch.randn(50, num_nodes).to(device), requires_grad=True).to(device)
                 self.supports_len +=1
             else:
-                if supports is None:
-                    self.supports = []
                 m, p, n = torch.svd(aptinit)
                 initemb1 = torch.mm(m[:, :10], torch.diag(p[:10] ** 0.5))
                 initemb2 = torch.mm(torch.diag(p[:10] ** 0.5), n[:, :10].t())
@@ -181,11 +180,11 @@ class gwnet(nn.Module):
         # calculate the current adaptive adj matrix once per iteration
         new_supports = None
         if self.gcn_bool and self.addaptadj and self.supports is not None:
-            # m1 = torch.tanh(0.25 * self.nodevec1)
-            # m2 = torch.tanh(0.25 * self.nodevec2)
-            # adp = F.relu(torch.tanh(torch.mm(m1, m2.t()) - torch.mm(m2, m1.t())))
+            m1 = torch.tanh(0.25 * self.nodevec1)
+            m2 = torch.tanh(0.25 * self.nodevec2)
+            adp = F.relu(torch.tanh(torch.mm(m1, m2.t()) - torch.mm(m2, m1.t())))
             # adp = F.softmax(F.relu(torch.tanh(torch.mm(m1, m2.t()) - torch.mm(m2, m1.t()))), dim=1)
-            adp = F.softmax(F.relu(torch.mm(self.nodevec1, self.nodevec2)), dim=1)
+            # adp = F.softmax(F.relu(torch.mm(self.nodevec1, self.nodevec2)), dim=1)
             # adp = adp + torch.eye(11).to(self.device)
             # adp = torch.triu(adp)
             new_supports = self.supports + [adp]

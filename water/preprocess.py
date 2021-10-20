@@ -5,6 +5,9 @@ import numpy as np
 import os
 
 
+factors = ['pH值', '总氮', '总磷', '氨氮', '水温', '浑浊度', '溶解氧', '电导率', '高锰酸盐指数']
+
+
 # 预处理1，合并文件
 # file_list: 文件列表
 def data_fix_concat(root,file_type, dist):
@@ -82,11 +85,31 @@ def data_insert_time(file_in, file_out,start,end,freq):
     all_df.to_csv(file_out,index_label='监测时间', header=True, index=True, encoding='utf_8_sig')
 
 
+# 利用四分位间距检测异常值
+def strange_data(df,col):
+    if col == '电导率':
+        data_bottom,data_top = 125,750
+    else:
+        q_75 = df[col].quantile(q=0.75)
+        q_25 = df[col].quantile(q=0.25)
+        d = q_75 - q_25
+        # 求数据上界和数据下界
+        data_top = q_75 + 1.5 * d
+        data_bottom = q_25 - 1.5 * d
+        data_bottom = max(data_bottom,0.001)
+    print('{}:数据上下界({:.3f},{:.3f})'.format(col,data_bottom,data_top))
+    # print('异常值的个数：', len(df[col][(df[col] > data_top) | (df[col] <= data_bottom)]))
+    # 置为缺失值
+    df[col][(df[col] > data_top) | (df[col] <= data_bottom)] = None
+
+
 # 预处理4 数据缺失处理，异常处理
 def data_clean(file_in, file_out, flag_save=False, fill_method = 'nearest'):
-    print('数据缺失处理...')
+    pd.set_option('mode.chained_assignment', None)
     # 缺失值、异常值处理
     data_df = pd.read_csv(file_in, encoding='utf-8', dtype=object)
+    print('数据缺失处理...数据总数:{}'.format(len(data_df)))
+    # print()
     data_df['phFlag'] = 0
     data_df['TNFlag'] = 0
     data_df['TPFlag'] = 0
@@ -97,71 +120,86 @@ def data_clean(file_in, file_out, flag_save=False, fill_method = 'nearest'):
     data_df['conductFlag'] = 0
     data_df['permangaFlag'] = 0
     data_df.sort_values(by=['站点名称', '监测时间'], inplace=True)
-    data_df['pH值'] = data_df['pH值'].astype(float)
-    data_df['总氮'] = data_df['总氮'].astype(float)
-    data_df['总磷'] = data_df['总磷'].astype(float)
-    data_df['氨氮'] = data_df['氨氮'].astype(float)
-    data_df['水温'] = data_df['水温'].astype(float)
-    data_df['浑浊度'] = data_df['浑浊度'].astype(float)
-    data_df['溶解氧'] = data_df['溶解氧'].astype(float)
-    data_df['电导率'] = data_df['电导率'].astype(float)
-    data_df['高锰酸盐指数'] = data_df['高锰酸盐指数'].astype(float)
+    for fac in factors:
+        data_df[fac] = data_df[fac].astype(float)
 
+    # 几个特殊的异常处理
+    data_df['总磷'] = np.where(data_df['总磷'] < 0, data_df['总磷'] * -1, data_df['总磷'])  # 负数转正
+    data_df['总磷'][data_df['总磷'] == 0] = None  # 总磷=0：视为缺失值，和缺失值一起处理
+    data_df['总磷'] = np.where(data_df['总磷'] > 5, data_df['总磷'] * 0.1, data_df['总磷'])  # 总磷>5：小数点左移一位
 
+    data_df['氨氮'] = np.where(data_df['氨氮'] < 0, data_df['氨氮'] * -1, data_df['氨氮'])  # 负数转正
 
-    data_df['pH值'] = np.where(data_df['pH值'] > 50, data_df['pH值'] * 0.1, data_df['pH值'])  # 50<pH值<90：小数点左移一位
-    data_df['pH值'][data_df['pH值'] > 14] = None  # pH值>14：视为缺失值，和缺失值一起处理
-    data_df['pH值'][data_df['pH值'] < 1] = None  # pH值<1：视为缺失值，和缺失值一起处理
+    data_df['高锰酸盐指数'] = np.where(data_df['高锰酸盐指数'] < 0, data_df['高锰酸盐指数'] * -1,
+                                 data_df['高锰酸盐指数'])  # 负数转正
+
+    # 四分法处理异常值（设为缺失值）
+    for fac in factors:
+        strange_data(data_df, fac)
+
+    # data_df['pH值'] = np.where(data_df['pH值'] > 50, data_df['pH值'] * 0.1, data_df['pH值'])  # 50<pH值<90：小数点左移一位
+    # data_df['pH值'][data_df['pH值'] > 14] = None  # pH值>14：视为缺失值，和缺失值一起处理
+    # data_df['pH值'][data_df['pH值'] < 1] = None  # pH值<1：视为缺失值，和缺失值一起处理
+    # strange_data(data_df, 'pH值')
     data_df['phFlag'][data_df['pH值'].isna()] = 1
     data_df['pH值'].interpolate(method=fill_method, inplace=True) # 用前一时刻的值填充缺失值
 
-    data_df['水温'][data_df['水温'] == 0] = None  # 水温=0：视为缺失值，和缺失值一起处理
+    # data_df['水温'][data_df['水温'] == 0] = None  # 水温=0：视为缺失值，和缺失值一起处理
+    # strange_data(data_df, '水温')
     data_df['temperFlag'][data_df['水温'].isna()] = 1
     data_df['水温'].interpolate(method=fill_method, inplace=True)  # 用前一时刻的值填充缺失值
 
+    # data_df['浑浊度'][data_df['浑浊度'] == 0] = None
+    # strange_data(data_df, '浑浊度')
     data_df['turbiFlag'][data_df['浑浊度'].isna()] = 1
-    data_df['浑浊度'][data_df['浑浊度'] == 0] = None
     data_df['浑浊度'].interpolate(method=fill_method, inplace=True)  # 用前一时刻的值填充缺失值
 
-    data_df['溶解氧'][data_df['溶解氧'] == 0] = None
-    data_df['溶解氧'][data_df['溶解氧'] >= 14.64] = None  # 溶解氧>14.64：视为缺失值，和缺失值一起处理
+    # data_df['溶解氧'][data_df['溶解氧'] == 0] = None
+    # data_df['溶解氧'][data_df['溶解氧'] >= 14.64] = None  # 溶解氧>14.64：视为缺失值，和缺失值一起处理
     data_df['doxygenFlag'][data_df['溶解氧'].isna()] = 1
     data_df['溶解氧'].interpolate(method=fill_method, inplace=True)  # 用前一时刻的值填充缺失值
 
+    # data_df['电导率'][data_df['电导率'] == 0] = None
     data_df['conductFlag'][data_df['电导率'].isna()] = 1
-    data_df['电导率'][data_df['电导率'] == 0] = None
     data_df['电导率'].interpolate(method=fill_method, inplace=True)  # 用前一时刻的值填充缺失值
 
     # data_df.reset_index(inplace=True)
-    data_df['总氮'][data_df['总氮'] <= 0] = None  # 总氮=0：视为缺失值，和缺失值一起处理
-    data_df['总氮'][data_df['总氮'] > 100] = None  # 总氮>100：视为缺失值，和缺失值一起处理
+    # data_df['总氮'][data_df['总氮'] <= 0] = None  # 总氮=0：视为缺失值，和缺失值一起处理
+    # data_df['总氮'][data_df['总氮'] > 100] = None  # 总氮>100：视为缺失值，和缺失值一起处理
     data_df['TNFlag'][data_df['总氮'].isna()] = 1
     data_df['总氮'].interpolate(method=fill_method, inplace=True)  # 用前一时刻的值填充缺失值
 
-    data_df['氨氮'] = np.where(data_df['氨氮'] < 0, data_df['氨氮'] * -1, data_df['氨氮'])  # 负数转正
-    data_df['氨氮'][data_df['氨氮'] == 0] = None  # 氨氮=0：视为缺失值，和缺失值一起处理
+    # data_df['氨氮'][data_df['氨氮'] == 0] = None  # 氨氮=0：视为缺失值，和缺失值一起处理
     # data_df['氨氮'] = np.where(data_df['氨氮'] > data_df['总氮'], None, data_df['氨氮'])
     data_df['NHFlag'][data_df['氨氮'].isna()] = 1
     data_df['氨氮'].interpolate(method=fill_method, inplace=True)  # 用前一时刻的值填充缺失值
 
-    data_df['总磷'] = np.where(data_df['总磷'] < 0, data_df['总磷'] * -1, data_df['总磷'])  # 负数转正
-    data_df['总磷'][data_df['总磷'] == 0] = None  # 总磷=0：视为缺失值，和缺失值一起处理
-    data_df['总磷'] = np.where(data_df['总磷'] > 5, data_df['总磷'] * 0.1, data_df['总磷'])  # 总磷>5：小数点左移一位
+
     data_df['TPFlag'][data_df['总磷'].isna()] = 1
     data_df['总磷'].interpolate(method=fill_method, inplace=True)  # 用前一时刻的值填充缺失值
 
-    data_df['高锰酸盐指数'] = np.where(data_df['高锰酸盐指数'] < 0, data_df['高锰酸盐指数'] * -1,
-                                    data_df['高锰酸盐指数'])  # 负数转正
-    data_df['高锰酸盐指数'][data_df['高锰酸盐指数'] == 0] = None  # 高锰酸盐指数=0：视为缺失值，和缺失值一起处理
+    # data_df['高锰酸盐指数'][data_df['高锰酸盐指数'] == 0] = None  # 高锰酸盐指数=0：视为缺失值，和缺失值一起处理
     data_df['permangaFlag'][data_df['高锰酸盐指数'].isna()] = 1
-    data_df['高锰酸盐指数'].interpolate(method=fill_method, inplace=True)  # 用前一时刻的值填充缺失值
+    data_df['高锰酸盐指数'].interpolate(method=fill_method, inplace=True)  #
+
+    # data_df['高锰酸盐指数'][data_df['高锰酸盐指数'].isna()] = 5 #无法插值的地方，使用平均值替代。高锰酸盐的均值差不多是5
     data_df.reset_index(inplace=True)
+
+    data_df = data_df.round(3)
 
     if flag_save:
         data_df.to_csv(file_out, header=True, index=False, encoding='utf_8_sig')
     else:
         data_df.to_csv(file_out, header=True, index=False, encoding='utf_8_sig')
     print('数据缺失处理完成')
+
+    # print(data_df.describe())
+    statistic(data_df)
+
+
+def statistic(df):
+    for fac in factors:
+        print("{}:\tmean:{:.4f}\tmin:{:.4f}\tmax:{:.4f}".format(fac,df[fac].mean(),df[fac].min(),df[fac].max()))
 
 
 # 统计每个站点每个因子数据缺失率，
@@ -206,7 +244,7 @@ if __name__ == '__main__':
     # # 步骤3：
     # data_insert_time('./temp/2.csv','./temp/3.csv','2020-01-01 00:00:00', '2020-10-31 23:00:00','4H')
     # 步骤4
-    data_clean('./temp/3.csv', './temp/4.csv',False,'quadratic')
+    data_clean('./temp/3.csv', './temp/4.csv',False,'linear')
 
     # # ######### 长泰
     # # 步骤1：

@@ -109,9 +109,9 @@ def main():
         adjinit = supports[0]
 
     # 只保留初始矩阵
-    supports = [supports[-1]]
-    # if args.aptonly:
-    #     supports = None
+    # supports = [supports[-1]]
+    if args.aptonly:
+        supports = None
 
     model_save_path = "./data/save_models/singFactor/waveNet.pth"
     early_stopping = earlystopping.EarlyStopping(patience=20, path=model_save_path, verbose=True)
@@ -135,6 +135,7 @@ def main():
     test(engine,dataloader,model_save_path)
 
 
+# 将所有因子作为图的节点
 if __name__ == "__main__":
     t1 = time.time()
     main()

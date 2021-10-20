@@ -1,0 +1,73 @@
+总氮单因子，重新数据预处理后的实验，无gcn
+24预测3
+
+Evaluate model on site 1 , Test MAE: 0.6433, Test MAPE: 0.0891, Test RMSE: 1.0752
+Evaluate model on site 2 , Test MAE: 1.0064, Test MAPE: 0.1642, Test RMSE: 2.0003
+Evaluate model on site 3 , Test MAE: 0.4723, Test MAPE: 0.0604, Test RMSE: 0.8905
+Evaluate model on site 4 , Test MAE: 1.1151, Test MAPE: 0.1070, Test RMSE: 1.5415
+Evaluate model on site 5 , Test MAE: 0.5284, Test MAPE: 0.0531, Test RMSE: 0.7675
+Evaluate model on site 6 , Test MAE: 0.4909, Test MAPE: 0.0671, Test RMSE: 1.0065
+Evaluate model on site 7 , Test MAE: 0.5561, Test MAPE: 0.0956, Test RMSE: 0.8710
+Evaluate model on site 8 , Test MAE: 0.3229, Test MAPE: 0.0679, Test RMSE: 0.5176
+Evaluate model on site 9 , Test MAE: 0.6705, Test MAPE: 0.1368, Test RMSE: 1.0942
+Evaluate model on site 10 , Test MAE: 0.3447, Test MAPE: 0.0582, Test RMSE: 0.5246
+On average over all site, Test MAE: 0.6151, Test MAPE: 0.0899, Test RMSE: 1.0289
+Total time spent: 37.6996
+
+
+ssh://root@172.17.171.8:22/home/s304/miniconda3/envs/ysj_torch/bin/python -u /media/s304/Data/yangsj/project/waveNet2/water/waterTrainSingle.py --adjtype doubletransition --data data/water/shangban/singleFac/1 --adjdata data/water/shangban/adjs/adj_shangban2.pkl --device cuda:1 --in_dim 2 --epochs 100 --num_nodes 10 --seq_length 3
+Namespace(addaptadj=False, adjdata='data/water/shangban/adjs/adj_shangban2.pkl', adjtype='doubletransition', aptonly=False, batch_size=64, data='data/water/shangban/singleFac/1', device='cuda:1', dropout=0.3, epochs=100, expid=1, gcn_bool=False, in_dim=2, learning_rate=0.001, nhid=32, num_nodes=10, print_every=50, randomadj=False, save='./garage/metr', seq_length=3, weight_decay=0.0001)
+start training...
+Epoch:1,validate loss:1.017181396484375
+Validation loss decreased (inf --> 1.017181).  Saving model ...
+Epoch:2,validate loss:0.8830685019493103
+Validation loss decreased (1.017181 --> 0.883069).  Saving model ...
+Epoch:3,validate loss:0.8945633769035339
+Epoch:4,validate loss:0.847900927066803
+Validation loss decreased (0.883069 --> 0.847901).  Saving model ...
+Epoch:5,validate loss:0.8673750758171082
+Epoch:6,validate loss:0.8776783347129822
+Epoch:7,validate loss:0.8529714941978455
+Epoch:8,validate loss:0.8799370527267456
+Epoch:9,validate loss:0.8396183252334595
+Validation loss decreased (0.847901 --> 0.839618).  Saving model ...
+Epoch:10,validate loss:0.8438794612884521
+Epoch:11,validate loss:0.8436619639396667
+Epoch:12,validate loss:0.8198556900024414
+Validation loss decreased (0.839618 --> 0.819856).  Saving model ...
+Epoch:13,validate loss:0.8564326167106628
+Epoch:14,validate loss:0.8187562823295593
+Validation loss decreased (0.819856 --> 0.818756).  Saving model ...
+Epoch:15,validate loss:0.8172048330307007
+Validation loss decreased (0.818756 --> 0.817205).  Saving model ...
+Epoch:16,validate loss:0.875824511051178
+Epoch:17,validate loss:0.9054384231567383
+Epoch:18,validate loss:0.8180493116378784
+Epoch:19,validate loss:0.8189310431480408
+Epoch:20,validate loss:0.8119954466819763
+Validation loss decreased (0.817205 --> 0.811995).  Saving model ...
+Epoch:21,validate loss:0.8419514298439026
+Epoch:22,validate loss:0.8737097978591919
+Epoch:23,validate loss:0.8283596634864807
+Epoch:24,validate loss:0.8352242112159729
+Epoch:25,validate loss:0.8933652639389038
+Epoch:26,validate loss:0.8646597862243652
+Epoch:27,validate loss:0.8212025165557861
+Epoch:28,validate loss:0.8347745537757874
+Epoch:29,validate loss:0.8211708664894104
+Epoch:30,validate loss:0.9286196827888489
+Epoch:31,validate loss:0.9038985967636108
+Epoch:32,validate loss:0.8368537425994873
+Epoch:33,validate loss:0.8232161402702332
+Epoch:34,validate loss:0.8319485187530518
+Epoch:35,validate loss:0.8634883165359497
+Epoch:36,validate loss:0.8156219720840454
+Epoch:37,validate loss:0.8290501236915588
+Epoch:38,validate loss:0.952375054359436
+Epoch:39,validate loss:0.8243235945701599
+Epoch:40,validate loss:0.8451497554779053
+Early stopping.
+Training finished
+
+
+Process finished with exit code 0
