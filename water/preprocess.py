@@ -5,7 +5,14 @@ import numpy as np
 import os
 
 
+ids_shangban = [ '天宝大水港排涝站','中排渠涝站（天宝）',
+              '甘棠溪慧民花园监测点',
+        '康山溪金峰花园监测点', '芗城水利局站','中山桥水闸站', '北京路水闸站','九湖监测点','桂林排涝站','上坂']
+
+# 表格中的顺序
 factors = ['pH值', '总氮', '总磷', '氨氮', '水温', '浑浊度', '溶解氧', '电导率', '高锰酸盐指数']
+# 有用的因子
+factors_use = ['pH值', '总氮', '总磷', '氨氮', '溶解氧', '高锰酸盐指数']
 
 
 # 预处理1，合并文件
@@ -232,10 +239,34 @@ def loss_data_count(data_file):
     print(line)
 
 
+# 将数据转为一个个序列，用于可视化
+def conver_to_seq_csv(input,output):
+    xlen = 0
+    csv_str = ""
+
+    df = pd.read_csv(input, usecols=[0, 1, 2, 3, 4, 5, 6, 9, 11])
+
+    for site in ids_shangban:
+        for fac in factors_use:
+            sub_df = df[fac][df['站点名称'] == site].astype(str)
+
+            xlen = len(sub_df) if xlen < len(sub_df) else xlen
+            sub_list = sub_df.tolist()
+            line = ",".join(sub_list) + '\n'
+            csv_str += line
+
+    xseq = [str(i) for i in range(xlen)]
+    xseq = ",".join(xseq) + '\n'
+    csv_str = xseq + csv_str
+    with open(output, 'w') as f:
+        f.write(csv_str)
+
+
+
 if __name__ == '__main__':
-    # # 预处理监测站点数据
-    # ######## 上坂
-    # # 步骤1：
+    # 预处理监测站点数据
+    ######## 上坂
+    # 步骤1：
     # root = r"E:\project\mvp\Graph-WaveNet\data\water\shangban\origin"
     # data_fix_concat(root,'xls','./temp/1.csv')
     #
@@ -245,8 +276,10 @@ if __name__ == '__main__':
     # data_insert_time('./temp/2.csv','./temp/3.csv','2020-01-01 00:00:00', '2020-10-31 23:00:00','4H')
     # 步骤4
     data_clean('./temp/3.csv', './temp/4.csv',False,'linear')
+    # 可视化
+    conver_to_seq_csv('./temp/4.csv', './temp/5.csv')
 
-    # # ######### 长泰
+    # ######### 长泰
     # # 步骤1：
     # root = r"E:\project\mvp\Graph-WaveNet\data\water\changtai\origin"
     # data_fix_concat(root, 'csv', './temp/a.csv')
@@ -256,7 +289,9 @@ if __name__ == '__main__':
     # # 步骤3：
     # data_insert_time('./temp/b.csv', './temp/c.csv', '2019-10-01 00:00:00', '2021-09-30 23:00:00', '4H')
     # # 步骤4
-    # data_clean('./temp/c.csv', './temp/d.csv')
+    # data_clean('./temp/c.csv', './temp/d.csv',False,'linear')
+
+
 
 
 

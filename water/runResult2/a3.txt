@@ -1,0 +1,152 @@
+pH单因子，重新数据预处理后的实验，自适应gcn;
+supports中只有自适应矩阵
+
+参数：
+--aptonly
+--gcn_bool
+--addaptadj
+--randomadj
+--adjtype
+doubletransition
+--data
+data/water/shangban/singleFac/0
+--adjdata
+data/water/shangban/adjs/adj_shangban2.pkl
+--device
+cuda:1
+--in_dim
+2
+--epochs
+100
+--num_nodes
+10
+--seq_length
+3
+
+Evaluate model on site 1 , Test MAE: 0.1704, Test MAPE: 0.0275, Test RMSE: 0.2909
+Evaluate model on site 2 , Test MAE: 0.1563, Test MAPE: 0.0230, Test RMSE: 0.2788
+Evaluate model on site 3 , Test MAE: 0.3693, Test MAPE: 0.0683, Test RMSE: 0.5885
+Evaluate model on site 4 , Test MAE: 0.1468, Test MAPE: 0.0210, Test RMSE: 0.2679
+Evaluate model on site 5 , Test MAE: 0.2302, Test MAPE: 0.0354, Test RMSE: 0.3500
+Evaluate model on site 6 , Test MAE: 0.1222, Test MAPE: 0.0199, Test RMSE: 0.1758
+Evaluate model on site 7 , Test MAE: 0.2862, Test MAPE: 0.0397, Test RMSE: 0.4921
+Evaluate model on site 8 , Test MAE: 0.2748, Test MAPE: 0.0391, Test RMSE: 0.4276
+Evaluate model on site 9 , Test MAE: 0.0747, Test MAPE: 0.0110, Test RMSE: 0.1093
+Evaluate model on site 10 , Test MAE: 0.1249, Test MAPE: 0.0189, Test RMSE: 0.2179
+On average over all site, Test MAE: 0.1956, Test MAPE: 0.0304, Test RMSE: 0.3199
+Total time spent: 218.5127
+
+
+ssh://root@172.17.171.8:22/home/s304/miniconda3/envs/ysj_torch/bin/python -u /media/s304/Data/yangsj/project/waveNet2/water/waterTrainSingle.py --aptonly --gcn_bool --addaptadj --randomadj --adjtype doubletransition --data data/water/shangban/singleFac/0 --adjdata data/water/shangban/adjs/adj_shangban2.pkl --device cuda:1 --in_dim 2 --epochs 100 --num_nodes 10 --seq_length 3
+Namespace(addaptadj=True, adjdata='data/water/shangban/adjs/adj_shangban2.pkl', adjtype='doubletransition', aptonly=True, batch_size=64, data='data/water/shangban/singleFac/0', device='cuda:1', dropout=0.3, epochs=100, expid=1, gcn_bool=True, in_dim=2, learning_rate=0.001, nhid=32, num_nodes=10, print_every=50, randomadj=True, save='./garage/metr', seq_length=3, weight_decay=0.0001)
+start training...
+Epoch:1,validate loss:0.25428125262260437
+Validation loss decreased (inf --> 0.254281).  Saving model ...
+Epoch:2,validate loss:0.22397197782993317
+Validation loss decreased (0.254281 --> 0.223972).  Saving model ...
+Epoch:3,validate loss:0.2055567353963852
+Validation loss decreased (0.223972 --> 0.205557).  Saving model ...
+Epoch:4,validate loss:0.21266759932041168
+Epoch:5,validate loss:0.19893193244934082
+Validation loss decreased (0.205557 --> 0.198932).  Saving model ...
+Epoch:6,validate loss:0.19574293494224548
+Validation loss decreased (0.198932 --> 0.195743).  Saving model ...
+Epoch:7,validate loss:0.19029636681079865
+Validation loss decreased (0.195743 --> 0.190296).  Saving model ...
+Epoch:8,validate loss:0.2121593952178955
+Epoch:9,validate loss:0.1946691870689392
+Epoch:10,validate loss:0.19007140398025513
+Validation loss decreased (0.190296 --> 0.190071).  Saving model ...
+Epoch:11,validate loss:0.1913449913263321
+Epoch:12,validate loss:0.21603479981422424
+Epoch:13,validate loss:0.19646550714969635
+Epoch:14,validate loss:0.21226739883422852
+Epoch:15,validate loss:0.19030719995498657
+Epoch:16,validate loss:0.18652069568634033
+Validation loss decreased (0.190071 --> 0.186521).  Saving model ...
+Epoch:17,validate loss:0.1913565844297409
+Epoch:18,validate loss:0.18720008432865143
+Epoch:19,validate loss:0.18483881652355194
+Validation loss decreased (0.186521 --> 0.184839).  Saving model ...
+Epoch:20,validate loss:0.18151991069316864
+Validation loss decreased (0.184839 --> 0.181520).  Saving model ...
+Epoch:21,validate loss:0.20294880867004395
+Epoch:22,validate loss:0.18610244989395142
+Epoch:23,validate loss:0.18656110763549805
+Epoch:24,validate loss:0.19408705830574036
+Epoch:25,validate loss:0.18278729915618896
+Epoch:26,validate loss:0.19797170162200928
+Epoch:27,validate loss:0.18007846176624298
+Validation loss decreased (0.181520 --> 0.180078).  Saving model ...
+Epoch:28,validate loss:0.18044164776802063
+Epoch:29,validate loss:0.18553441762924194
+Epoch:30,validate loss:0.17798244953155518
+Validation loss decreased (0.180078 --> 0.177982).  Saving model ...
+Epoch:31,validate loss:0.1819199025630951
+Epoch:32,validate loss:0.18560579419136047
+Epoch:33,validate loss:0.18300433456897736
+Epoch:34,validate loss:0.1803237646818161
+Epoch:35,validate loss:0.17881417274475098
+Epoch:36,validate loss:0.1853255182504654
+Epoch:37,validate loss:0.1871899962425232
+Epoch:38,validate loss:0.18108835816383362
+Epoch:39,validate loss:0.17890097200870514
+Epoch:40,validate loss:0.1792508065700531
+Epoch:41,validate loss:0.17923779785633087
+Epoch:42,validate loss:0.184295192360878
+Epoch:43,validate loss:0.179353266954422
+Epoch:44,validate loss:0.1775222271680832
+Validation loss decreased (0.177982 --> 0.177522).  Saving model ...
+Epoch:45,validate loss:0.18063561618328094
+Epoch:46,validate loss:0.19013440608978271
+Epoch:47,validate loss:0.1876903474330902
+Epoch:48,validate loss:0.17810173332691193
+Epoch:49,validate loss:0.17949192225933075
+Epoch:50,validate loss:0.1812979280948639
+Epoch:51,validate loss:0.18481256067752838
+Epoch:52,validate loss:0.17938484251499176
+Epoch:53,validate loss:0.17948545515537262
+Epoch:54,validate loss:0.18208006024360657
+Epoch:55,validate loss:0.18013599514961243
+Epoch:56,validate loss:0.18103612959384918
+Epoch:57,validate loss:0.18357306718826294
+Epoch:58,validate loss:0.18500971794128418
+Epoch:59,validate loss:0.1791013479232788
+Epoch:60,validate loss:0.17751991748809814
+Validation loss decreased (0.177522 --> 0.177520).  Saving model ...
+Epoch:61,validate loss:0.18259893357753754
+Epoch:62,validate loss:0.185293048620224
+Epoch:63,validate loss:0.17942127585411072
+Epoch:64,validate loss:0.18014025688171387
+Epoch:65,validate loss:0.18223311007022858
+Epoch:66,validate loss:0.18348081409931183
+Epoch:67,validate loss:0.18490691483020782
+Epoch:68,validate loss:0.18286097049713135
+Epoch:69,validate loss:0.17862683534622192
+Epoch:70,validate loss:0.18223248422145844
+Epoch:71,validate loss:0.185936838388443
+Epoch:72,validate loss:0.18515072762966156
+Epoch:73,validate loss:0.1845201998949051
+Epoch:74,validate loss:0.18190084397792816
+Epoch:75,validate loss:0.18382853269577026
+Epoch:76,validate loss:0.17801934480667114
+Epoch:77,validate loss:0.1844286322593689
+Epoch:78,validate loss:0.18155770003795624
+Epoch:79,validate loss:0.18438152968883514
+Epoch:80,validate loss:0.1875339299440384
+Early stopping.
+Training finished
+邻接矩阵：min=0.000,max=0.972,avg=0.100
+0.0005025378,5.4191074e-05,0.33360407,5.4191074e-05,0.0066045607,0.656875,5.4191074e-05,5.4191074e-05,6.822736e-05,0.0021288088,
+0.013843581,0.87138075,0.0143589815,0.0173553,0.013843581,0.013843581,0.013843581,0.013843581,0.013843581,0.013843581,
+0.01555298,0.0102077145,0.0102077145,0.0102077145,0.4394417,0.0102077145,0.0102077145,0.4735513,0.0102077145,0.0102077145,
+0.43734786,0.0005794967,0.5314828,0.008862237,0.0005794967,0.0019628534,0.0005794967,0.017446786,0.0005794967,0.0005794967,
+0.0074346876,0.013353454,0.006498459,0.008976486,0.006498459,0.006498459,0.006498459,0.006498459,0.016357826,0.92138535,
+0.034742825,0.034742825,0.034742825,0.5125323,0.034742825,0.034742825,0.034742825,0.20952508,0.034742825,0.034742825,
+0.02416873,0.02416873,0.02416873,0.02416873,0.02416873,0.02416873,0.02416873,0.6838939,0.02416873,0.122756265,
+0.0006029511,0.0023433808,0.0006029511,0.18526252,0.0006029511,0.0006029511,0.805017,0.0020814491,0.002280868,0.0006029511,
+0.017874856,0.017874856,0.103037976,0.7435827,0.017874856,0.017874856,0.017874856,0.028255329,0.017874856,0.017874856,
+0.0030075638,0.004304498,0.97161126,0.0030075638,0.0030075638,0.0030075638,0.0030075638,0.0030075638,0.0030075638,0.0030313376,
+
+
+Process finished with exit code 0

@@ -1,0 +1,200 @@
+每个因子当做节点，
+使用节点嵌入自适应邻接矩阵，嵌入矩阵长度16
+
+
+--aptonly
+--addaptadj
+--randomadj
+--adjtype
+doubletransition
+--data
+data/water/shangban/multiFac
+--adjdata
+data/water/shangban/adjs/adj_60_8eye_one.pkl
+--device
+cuda:1
+--in_dim
+2
+--epochs
+200
+--num_nodes
+60
+--seq_length
+3
+
+
+ssh://root@172.17.171.8:22/home/s304/miniconda3/envs/ysj_torch/bin/python -u /media/s304/Data/yangsj/project/waveNet2/water/waterTrainSingle.py --aptonly --addaptadj --randomadj --adjtype doubletransition --data data/water/shangban/multiFac --adjdata data/water/shangban/adjs/adj_60_8eye_one.pkl --device cuda:1 --in_dim 2 --epochs 200 --num_nodes 60 --seq_length 3
+Namespace(addaptadj=True, adjdata='data/water/shangban/adjs/adj_60_8eye_one.pkl', adjtype='doubletransition', aptonly=True, batch_size=64, data='data/water/shangban/multiFac', device='cuda:1', dropout=0.3, epochs=200, expid=1, gcn_bool=False, in_dim=2, learning_rate=0.001, nhid=32, num_nodes=60, print_every=50, randomadj=True, save='./garage/metr', seq_length=3, weight_decay=0.0001)
+start training...
+Epoch:1,validate loss:0.9802629351615906
+Validation loss decreased (inf --> 0.980263).  Saving model ...
+Epoch:2,validate loss:0.5439914464950562
+Validation loss decreased (0.980263 --> 0.543991).  Saving model ...
+Epoch:3,validate loss:0.4278464615345001
+Validation loss decreased (0.543991 --> 0.427846).  Saving model ...
+Epoch:4,validate loss:0.4670639634132385
+Epoch:5,validate loss:0.4233146905899048
+Validation loss decreased (0.427846 --> 0.423315).  Saving model ...
+Epoch:6,validate loss:0.47346165776252747
+Epoch:7,validate loss:0.42451685667037964
+Epoch:8,validate loss:0.4430619180202484
+Epoch:9,validate loss:0.4425866901874542
+Epoch:10,validate loss:0.4553275406360626
+Epoch:11,validate loss:0.44913017749786377
+Epoch:12,validate loss:0.41842618584632874
+Validation loss decreased (0.423315 --> 0.418426).  Saving model ...
+Epoch:13,validate loss:0.44094255566596985
+Epoch:14,validate loss:0.4410395324230194
+Epoch:15,validate loss:0.4363001585006714
+Epoch:16,validate loss:0.4262222349643707
+Epoch:17,validate loss:0.4194868505001068
+Epoch:18,validate loss:0.4185579717159271
+Epoch:19,validate loss:0.4304886758327484
+Epoch:20,validate loss:0.43759456276893616
+Epoch:21,validate loss:0.42651817202568054
+Epoch:22,validate loss:0.4527827799320221
+Epoch:23,validate loss:0.43573465943336487
+Epoch:24,validate loss:0.4067576229572296
+Validation loss decreased (0.418426 --> 0.406758).  Saving model ...
+Epoch:25,validate loss:0.4168654680252075
+Epoch:26,validate loss:0.41370731592178345
+Epoch:27,validate loss:0.42588353157043457
+Epoch:28,validate loss:0.42716774344444275
+Epoch:29,validate loss:0.42881372570991516
+Epoch:30,validate loss:0.4092532694339752
+Epoch:31,validate loss:0.41130897402763367
+Epoch:32,validate loss:0.41881680488586426
+Epoch:33,validate loss:0.415552020072937
+Epoch:34,validate loss:0.40542638301849365
+Validation loss decreased (0.406758 --> 0.405426).  Saving model ...
+Epoch:35,validate loss:0.41890662908554077
+Epoch:36,validate loss:0.43877750635147095
+Epoch:37,validate loss:0.42633694410324097
+Epoch:38,validate loss:0.4159766435623169
+Epoch:39,validate loss:0.4305824339389801
+Epoch:40,validate loss:0.40634506940841675
+Epoch:41,validate loss:0.44604137539863586
+Epoch:42,validate loss:0.4045066833496094
+Validation loss decreased (0.405426 --> 0.404507).  Saving model ...
+Epoch:43,validate loss:0.4018458127975464
+Validation loss decreased (0.404507 --> 0.401846).  Saving model ...
+Epoch:44,validate loss:0.40427282452583313
+Epoch:45,validate loss:0.40895599126815796
+Epoch:46,validate loss:0.4114435613155365
+Epoch:47,validate loss:0.41097986698150635
+Epoch:48,validate loss:0.4079391658306122
+Epoch:49,validate loss:0.4201108515262604
+Epoch:50,validate loss:0.4268498718738556
+Epoch:51,validate loss:0.419968843460083
+Epoch:52,validate loss:0.41289350390434265
+Epoch:53,validate loss:0.4124482274055481
+Epoch:54,validate loss:0.3964352607727051
+Validation loss decreased (0.401846 --> 0.396435).  Saving model ...
+Epoch:55,validate loss:0.44193235039711
+Epoch:56,validate loss:0.4363257586956024
+Epoch:57,validate loss:0.41519302129745483
+Epoch:58,validate loss:0.4177369177341461
+Epoch:59,validate loss:0.4203034043312073
+Epoch:60,validate loss:0.4095822274684906
+Epoch:61,validate loss:0.406928688287735
+Epoch:62,validate loss:0.4358280301094055
+Epoch:63,validate loss:0.398887038230896
+Epoch:64,validate loss:0.3982219696044922
+Epoch:65,validate loss:0.4145565629005432
+Epoch:66,validate loss:0.42320516705513
+Epoch:67,validate loss:0.4198721945285797
+Epoch:68,validate loss:0.3983049988746643
+Epoch:69,validate loss:0.398287296295166
+Epoch:70,validate loss:0.4394434690475464
+Epoch:71,validate loss:0.4172113835811615
+Epoch:72,validate loss:0.39550215005874634
+Validation loss decreased (0.396435 --> 0.395502).  Saving model ...
+Epoch:73,validate loss:0.4131827652454376
+Epoch:74,validate loss:0.39425328373908997
+Validation loss decreased (0.395502 --> 0.394253).  Saving model ...
+Epoch:75,validate loss:0.416317880153656
+Epoch:76,validate loss:0.4000055491924286
+Epoch:77,validate loss:0.4178411066532135
+Epoch:78,validate loss:0.39631497859954834
+Epoch:79,validate loss:0.40889424085617065
+Epoch:80,validate loss:0.41464555263519287
+Epoch:81,validate loss:0.4018251597881317
+Epoch:82,validate loss:0.412627637386322
+Epoch:83,validate loss:0.4035007953643799
+Epoch:84,validate loss:0.408368855714798
+Epoch:85,validate loss:0.41590243577957153
+Epoch:86,validate loss:0.4001741409301758
+Epoch:87,validate loss:0.41261783242225647
+Epoch:88,validate loss:0.4016095995903015
+Epoch:89,validate loss:0.4023168087005615
+Epoch:90,validate loss:0.41264232993125916
+Epoch:91,validate loss:0.4321242570877075
+Epoch:92,validate loss:0.41344377398490906
+Epoch:93,validate loss:0.4072837829589844
+Epoch:94,validate loss:0.42764919996261597
+Early stopping.
+Training finished
+Evaluate model on site 1 , Test MAE: 0.1430, Test MAPE: 0.0231, Test RMSE: 0.2501
+Evaluate model on site 2 , Test MAE: 0.6122, Test MAPE: 0.0778, Test RMSE: 0.9852
+Evaluate model on site 3 , Test MAE: 0.0700, Test MAPE: 0.0889, Test RMSE: 0.1088
+Evaluate model on site 4 , Test MAE: 0.3323, Test MAPE: 0.0989, Test RMSE: 0.5669
+Evaluate model on site 5 , Test MAE: 0.8154, Test MAPE: 1.0176, Test RMSE: 1.2378
+Evaluate model on site 6 , Test MAE: 0.3551, Test MAPE: 0.0386, Test RMSE: 0.6571
+Evaluate model on site 7 , Test MAE: 0.1294, Test MAPE: 0.0197, Test RMSE: 0.2198
+Evaluate model on site 8 , Test MAE: 0.8492, Test MAPE: 0.1714, Test RMSE: 1.4408
+Evaluate model on site 9 , Test MAE: 0.0718, Test MAPE: 0.1029, Test RMSE: 0.1111
+Evaluate model on site 10 , Test MAE: 0.3822, Test MAPE: 0.5227, Test RMSE: 0.7142
+Evaluate model on site 11 , Test MAE: 0.7721, Test MAPE: 0.4242, Test RMSE: 1.2373
+Evaluate model on site 12 , Test MAE: 0.4964, Test MAPE: 0.0626, Test RMSE: 0.7701
+Evaluate model on site 13 , Test MAE: 0.2028, Test MAPE: 0.0332, Test RMSE: 0.4069
+Evaluate model on site 14 , Test MAE: 0.2984, Test MAPE: 0.0532, Test RMSE: 0.6560
+Evaluate model on site 15 , Test MAE: 0.0371, Test MAPE: 0.1818, Test RMSE: 0.0831
+Evaluate model on site 16 , Test MAE: 0.1337, Test MAPE: 0.2871, Test RMSE: 0.3461
+Evaluate model on site 17 , Test MAE: 0.8145, Test MAPE: 0.1848, Test RMSE: 1.1918
+Evaluate model on site 18 , Test MAE: 0.2877, Test MAPE: 0.0871, Test RMSE: 0.6166
+Evaluate model on site 19 , Test MAE: 0.1676, Test MAPE: 0.0233, Test RMSE: 0.2708
+Evaluate model on site 20 , Test MAE: 0.7867, Test MAPE: 0.0975, Test RMSE: 1.1692
+Evaluate model on site 21 , Test MAE: 0.0642, Test MAPE: 0.2222, Test RMSE: 0.1103
+Evaluate model on site 22 , Test MAE: 0.4083, Test MAPE: 0.4638, Test RMSE: 0.7436
+Evaluate model on site 23 , Test MAE: 0.6842, Test MAPE: 0.4076, Test RMSE: 1.1332
+Evaluate model on site 24 , Test MAE: 0.5525, Test MAPE: 0.1084, Test RMSE: 1.0023
+Evaluate model on site 25 , Test MAE: 0.1833, Test MAPE: 0.0294, Test RMSE: 0.2850
+Evaluate model on site 26 , Test MAE: 0.4195, Test MAPE: 0.0563, Test RMSE: 0.7028
+Evaluate model on site 27 , Test MAE: 0.0465, Test MAPE: 0.1201, Test RMSE: 0.0815
+Evaluate model on site 28 , Test MAE: 0.2887, Test MAPE: 0.1659, Test RMSE: 0.4744
+Evaluate model on site 29 , Test MAE: 0.6350, Test MAPE: 1.4665, Test RMSE: 1.1920
+Evaluate model on site 30 , Test MAE: 0.4180, Test MAPE: 0.0888, Test RMSE: 0.7625
+Evaluate model on site 31 , Test MAE: 0.1697, Test MAPE: 0.0280, Test RMSE: 0.2964
+Evaluate model on site 32 , Test MAE: 0.5696, Test MAPE: 0.0859, Test RMSE: 1.0244
+Evaluate model on site 33 , Test MAE: 0.0768, Test MAPE: 0.1341, Test RMSE: 0.1200
+Evaluate model on site 34 , Test MAE: 0.4955, Test MAPE: 0.1842, Test RMSE: 0.7628
+Evaluate model on site 35 , Test MAE: 0.7048, Test MAPE: 2.2067, Test RMSE: 1.2134
+Evaluate model on site 36 , Test MAE: 0.6943, Test MAPE: 0.2042, Test RMSE: 1.1891
+Evaluate model on site 37 , Test MAE: 0.1927, Test MAPE: 0.0286, Test RMSE: 0.3367
+Evaluate model on site 38 , Test MAE: 0.4030, Test MAPE: 0.0633, Test RMSE: 0.7564
+Evaluate model on site 39 , Test MAE: 0.0410, Test MAPE: 0.1179, Test RMSE: 0.0748
+Evaluate model on site 40 , Test MAE: 0.3035, Test MAPE: 0.3304, Test RMSE: 0.6323
+Evaluate model on site 41 , Test MAE: 1.0157, Test MAPE: 2.6491, Test RMSE: 1.8499
+Evaluate model on site 42 , Test MAE: 0.4719, Test MAPE: 0.1408, Test RMSE: 0.7870
+Evaluate model on site 43 , Test MAE: 0.1668, Test MAPE: 0.0263, Test RMSE: 0.3488
+Evaluate model on site 44 , Test MAE: 0.3919, Test MAPE: 0.0798, Test RMSE: 0.6421
+Evaluate model on site 45 , Test MAE: 0.0565, Test MAPE: 0.0943, Test RMSE: 0.0951
+Evaluate model on site 46 , Test MAE: 0.2096, Test MAPE: 0.4520, Test RMSE: 0.3477
+Evaluate model on site 47 , Test MAE: 0.7123, Test MAPE: 0.2544, Test RMSE: 1.2521
+Evaluate model on site 48 , Test MAE: 0.4430, Test MAPE: 0.0878, Test RMSE: 0.8877
+Evaluate model on site 49 , Test MAE: 0.1411, Test MAPE: 0.0210, Test RMSE: 0.2551
+Evaluate model on site 50 , Test MAE: 0.7329, Test MAPE: 0.1172, Test RMSE: 1.1551
+Evaluate model on site 51 , Test MAE: 0.0632, Test MAPE: 0.1267, Test RMSE: 0.1030
+Evaluate model on site 52 , Test MAE: 0.4310, Test MAPE: 0.2181, Test RMSE: 0.7030
+Evaluate model on site 53 , Test MAE: 1.1052, Test MAPE: 1.1496, Test RMSE: 1.7540
+Evaluate model on site 54 , Test MAE: 0.5550, Test MAPE: 0.1110, Test RMSE: 0.9419
+Evaluate model on site 55 , Test MAE: 0.1326, Test MAPE: 0.0187, Test RMSE: 0.2578
+Evaluate model on site 56 , Test MAE: 0.2643, Test MAPE: 0.0598, Test RMSE: 0.4930
+Evaluate model on site 57 , Test MAE: 0.0245, Test MAPE: 0.1829, Test RMSE: 0.0340
+Evaluate model on site 58 , Test MAE: 0.2107, Test MAPE: 0.6583, Test RMSE: 0.3589
+Evaluate model on site 59 , Test MAE: 1.0243, Test MAPE: 0.2032, Test RMSE: 1.5450
+Evaluate model on site 60 , Test MAE: 0.3840, Test MAPE: 0.2814, Test RMSE: 0.6852
+On average over all site, Test MAE: 0.3941, Test MAPE: 0.2840, Test RMSE: 0.6738
+Total time spent: 531.3193
+
+Process finished with exit code 0

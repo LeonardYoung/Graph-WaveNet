@@ -72,6 +72,20 @@ def test(engine,dataloader,model_path):
     print("Training finished")
     # print("The valid loss on best model is", str(round(his_loss[bestid], 4)))
 
+    if args.gcn_bool:
+        adj = engine.model.adj.to('cpu').numpy()
+
+        adj_min = np.min(adj)
+        adj_max = np.max(adj)
+        adj_avg = np.mean(adj)
+        # print(adj)
+        print('邻接矩阵：min={:.3f},max={:.3f},avg={:.3f}'.format(adj_min,adj_max,adj_avg))
+
+        for i in range(adj.shape[0]):
+            for j in range(adj.shape[1]):
+                print(adj[i][j], end=',')
+            print('')
+
     amae = []
     amape = []
     armse = []
@@ -87,9 +101,10 @@ def test(engine,dataloader,model_path):
 
     log = 'On average over all site, Test MAE: {:.4f}, Test MAPE: {:.4f}, Test RMSE: {:.4f}'
     print(log.format(np.mean(amae), np.mean(amape), np.mean(armse)))
+    return np.mean(amae), np.mean(amape), np.mean(armse)
 
 
-def main():
+def run_once():
     # set seed
     # torch.manual_seed(args.seed)
     # np.random.seed(args.seed)
@@ -133,11 +148,40 @@ def main():
         if early_stopping.early_stop:
             print("Early stopping.")
             break
-    test(engine,dataloader,model_save_path)
+    return test(engine,dataloader,model_save_path)
 
 
 if __name__ == "__main__":
+    # ############跑一次
     t1 = time.time()
-    main()
+    run_once()
     t2 = time.time()
-    print("Total time spent: {:.4f}".format(t2-t1))
+    print("Total time spent: {:.4f}".format(t2 - t1))
+
+
+    # ########### 自动进行单因子实验
+    # args.epochs = 200
+    # result_log = ""
+    #
+    # factor_index = [0, 1, 2, 3, 6, 8]
+    #
+    # for fac in factor_index:
+    #     args.data = 'data/water/shangban/singleFac/' + str(fac)
+    #     for gcn in range(1):
+    #         args.gcn_bool = True # if gcn == 0 else True
+    #         m_mae_list = []
+    #         for i in range(5):
+    #             print("data::{},running {} st".format(args.data,i+1))
+    #             mae = run_once()
+    #             print(mae)
+    #             m_mae_list.append(mae[0])
+    #         m_mae = np.mean(m_mae_list)
+    #         print(m_mae_list)
+    #         result_log += "data=={},gcn={},MAE={:.4f}\n".format(args.data,gcn, m_mae)
+    #
+    #
+    # print('------------------finished-----------------------')
+    # t2 = time.time()
+    # print(result_log)
+    # print("Total time spent: {:.4f}".format(t2 - t1))
+

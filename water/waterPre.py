@@ -12,6 +12,7 @@ ids_shangban = [ '天宝大水港排涝站','中排渠涝站（天宝）',
 
 # 表格中的顺序
 factors = ['pH值', '总氮', '总磷', '氨氮', '水温', '浑浊度', '溶解氧', '电导率', '高锰酸盐指数']
+factors_use = ['pH值', '总氮', '总磷', '氨氮', '溶解氧', '高锰酸盐指数']
 
 
 # 横向合并一个因子，保存为h5
@@ -65,6 +66,11 @@ def generate_multi_factor(input_file,root_dir,include_site,include_factor,seq_le
         add_time_in_day=True,
     )
     print("x shape: ", x.shape, ", y shape: ", y.shape)
+    # 随机打乱！
+    per = np.random.permutation(x.shape[0])
+    x = x[per]
+    y = y[per]
+
     # Write the data into npz file.
     num_samples = x.shape[0]
     num_test = round(num_samples * 0.2)
@@ -148,6 +154,11 @@ def generate_dataset(hdf_file, out_dir,seq_length_x=24, seq_length_y=24):
         add_time_in_day=True,
     )
     print("x shape: ", x.shape, ", y shape: ", y.shape)
+    # 随机打乱！
+    per = np.random.permutation(x.shape[0])
+    x = x[per]
+    y = y[per]
+
     # Write the data into npz file.
     num_samples = x.shape[0]
     num_test = round(num_samples * 0.2)
@@ -382,11 +393,11 @@ if __name__ == "__main__":
     # merge_all_factor('../data/water/water2020.csv', '../data/water/mergeAll.h5')
     # generate_data('../data/water/mergeAll.h5', '../data/water/genAll')
 
-    # # ####### 单因子数据集
+    # ####### 单因子数据集
     # for i in range(9):
     #     file_name = merge_one_factor('../data/water/shangban/water2020_linear_no_strange.csv',i,'../data/water/shangban')
     #     generate_dataset(file_name,'../data/water/shangban/singleFac/'+str(i)+'/',24,3)
-
+    #
 
     # #### 生成单站点单因子数据集
     # for i in range(len(factors)):
@@ -397,9 +408,17 @@ if __name__ == "__main__":
 
 
     #### 生成多因子数据集（每个因子是一个节点）
+    # 上坂
     generate_multi_factor('../data/water/shangban/water2020_linear_no_strange.csv','../data/water/shangban/multiFac',
-                          ids_shangban,[0,1,2,3,8],
+                          ids_shangban,[0,1,2,3,6,8],
                           24,3)
 
-    get_adj_file('../data/water/shangban', 50,'adj_50_8eye_one.pkl')
+    get_adj_file('../data/water/shangban', 60,'adj_60_8eye_one.pkl')
+
+    # 长泰
+    # generate_multi_factor('../data/water/changtai/water_linear.csv', '../data/water/changtai/multiFac',
+    #                       ids_shangban, [0, 1, 2, 3, 6, 8],
+    #                       24, 3)
+    #
+    # get_adj_file('../data/water/changtai', 60, 'adj_60_16eye_one.pkl')
     pass

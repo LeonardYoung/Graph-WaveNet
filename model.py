@@ -115,8 +115,8 @@ class gwnet(nn.Module):
                 self.supports = []
             if aptinit is None:
 
-                self.nodevec1 = nn.Parameter(torch.randn(num_nodes, 50).to(device), requires_grad=True).to(device)
-                self.nodevec2 = nn.Parameter(torch.randn(50, num_nodes).to(device), requires_grad=True).to(device)
+                self.nodevec1 = nn.Parameter(torch.randn(num_nodes, 32).to(device), requires_grad=True).to(device)
+                self.nodevec2 = nn.Parameter(torch.randn(32, num_nodes).to(device), requires_grad=True).to(device)
                 self.supports_len +=1
             else:
                 m, p, n = torch.svd(aptinit)
@@ -180,14 +180,19 @@ class gwnet(nn.Module):
         # calculate the current adaptive adj matrix once per iteration
         new_supports = None
         if self.gcn_bool and self.addaptadj and self.supports is not None:
-            m1 = torch.tanh(0.25 * self.nodevec1)
-            m2 = torch.tanh(0.25 * self.nodevec2)
-            adp = F.relu(torch.tanh(torch.mm(m1, m2.t()) - torch.mm(m2, m1.t())))
+            # 对称阵算法
+            # m1 = torch.tanh(0.25 * self.nodevec1)
+            # m2 = torch.tanh(0.25 * self.nodevec2)
+            # # adp = F.relu(torch.tanh(torch.mm(m1, m2.t()) - torch.mm(m2, m1.t())))
             # adp = F.softmax(F.relu(torch.tanh(torch.mm(m1, m2.t()) - torch.mm(m2, m1.t()))), dim=1)
-            # adp = F.softmax(F.relu(torch.mm(self.nodevec1, self.nodevec2)), dim=1)
-            # adp = adp + torch.eye(11).to(self.device)
             # adp = torch.triu(adp)
+            # 原始算法
+            adp = F.softmax(F.relu(torch.mm(self.nodevec1, self.nodevec2)), dim=1)
+
+
             new_supports = self.supports + [adp]
+
+            # 保留
             self.adj = adp
 
         # WaveNet layers
