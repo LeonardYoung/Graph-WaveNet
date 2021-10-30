@@ -69,27 +69,33 @@ def data_transpose(file_in='./first.csv', dataTrans="./second.csv"):
 # 预处理3 插入缺失时间
 def data_insert_time(file_in, file_out,start,end,freq):
     data2020_df = pd.read_csv(file_in, encoding='utf-8', dtype=object,
-                              usecols=[0,1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+                              usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     # data2020_df.head(5)
     site_list = data2020_df['站点名称'].unique().tolist()
 
+    for fac in factors:
+        data2020_df[fac] = data2020_df[fac].astype(float)
     all_df = pd.DataFrame()
     first = True
 
-    date_index = pd.date_range(start,end,freq=freq)
+    date_index = pd.date_range(start, end, freq='1H')
+
     for site in site_list:
         site_df = data2020_df.loc[data2020_df['站点名称'] == site]
-        for i in range(len(site_df)):
-            row_time = datetime.datetime.strptime(site_df.iloc[i, 0], '%Y-%m-%d %H:%M:%S')
-            site_df.iloc[i, 0] = row_time
+        site_df['监测时间'] = pd.to_datetime(site_df['监测时间'])
         site_df = site_df.set_index('监测时间')
+        # 补全缺失时间
         site_df = site_df.reindex(date_index)
-        site_df['站点名称'][site_df['站点名称'].isna()] = site
+        # 按照间隔时间重新采样，多个数则取平均
+        site_df = site_df.resample(freq).mean()
+        site_df = site_df.round(3)
+        site_df.insert(0, '站点名称', site)
+        # site_df['站点名称'][site_df['站点名称'].isna()] = site
 
         all_df = all_df.append(site_df) if not first else site_df
         first = False
 
-    all_df.to_csv(file_out,index_label='监测时间', header=True, index=True, encoding='utf_8_sig')
+    all_df.to_csv(file_out, index_label='监测时间', header=True, index=True, encoding='utf_8_sig')
 
 
 # 利用四分位间距检测异常值
@@ -267,13 +273,13 @@ if __name__ == '__main__':
     # 预处理监测站点数据
     ######## 上坂
     # 步骤1：
-    # root = r"E:\project\mvp\Graph-WaveNet\data\water\shangban\origin"
-    # data_fix_concat(root,'xls','./temp/1.csv')
-    #
-    # # 步骤2：
-    # data_transpose('./temp/1.csv', './temp/2.csv')
-    # # 步骤3：
-    # data_insert_time('./temp/2.csv','./temp/3.csv','2020-01-01 00:00:00', '2020-10-31 23:00:00','4H')
+    root = r"E:\project\mvp\Graph-WaveNet\data\water\shangban\origin"
+    data_fix_concat(root,'xls','./temp/1.csv')
+
+    # 步骤2：
+    data_transpose('./temp/1.csv', './temp/2.csv')
+    # 步骤3：
+    data_insert_time('./temp/2.csv','./temp/3.csv','2020-01-01 00:00:00', '2020-10-31 23:00:00','24H')
     # 步骤4
     data_clean('./temp/3.csv', './temp/4.csv',False,'linear')
     # 可视化

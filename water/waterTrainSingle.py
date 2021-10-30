@@ -75,7 +75,7 @@ def test(engine,dataloader,model_path):
     print("Training finished")
     # print("The valid loss on best model is", str(round(his_loss[bestid], 4)))
 
-    if args.gcn_bool:
+    if args.gcn_bool and engine.model.adj is not None:
         adj = engine.model.adj.to('cpu').numpy()
 
         adj_min = np.min(adj)
@@ -165,7 +165,7 @@ def run_once():
 
 if __name__ == "__main__":
 
-    args.aptonly = True
+    args.aptonly = True ###
     args.addaptadj = True
     args.randomadj = True
     args.adjtype = 'doubletransition'
@@ -174,15 +174,25 @@ if __name__ == "__main__":
     args.device = 'cuda:1'
     # args.device = 'cpu'
 
-    # ######  单因子全站点实验参数
-    args.gcn_bool = True
-    args.epochs = 100
-    args.data = 'data/water/shangban/singleFac/0'
-    args.adjdata = 'data/water/shangban/adjs/adj_shangban2.pkl'
+    # # ######  单因子全站点实验参数
+    args.gcn_bool = False
+    args.epochs = 200
+    args.data = 'data/water/shangban/daySingleFac/0'
+    args.adjdata = 'data/water/shangban/adjs/adj_all_one.pkl'
     # 输入维度（包括时间维度）
     args.in_dim = 2
     # 图节点数
     args.num_nodes = 10
+
+    # ######  多因子实验参数（每个因子是一个站点）
+    # args.gcn_bool = True
+    # args.epochs = 200
+    # args.data = 'data/water/shangban/multiFac'
+    # args.adjdata = 'data/water/shangban/adjs/adj_60_8eye_one.pkl'
+    # # 输入维度（包括时间维度）
+    # args.in_dim = 2
+    # # 图节点数
+    # args.num_nodes = 60
 
     ######  全因子多站点实验参数
     # args.gcn_bool = False
@@ -203,6 +213,7 @@ if __name__ == "__main__":
 
 
     # ########### 自动进行单因子实验
+    # t1 = time.time()
     # args.epochs = 200
     # result_log = ""
     #

@@ -175,7 +175,7 @@ def load_dataset(dataset_dir, batch_size, valid_batch_size= None, test_batch_siz
     x_train = data['x_train']
     mean_list = []
     std_list = []
-    dimen_size = x_train.shape[3] - 1
+    dimen_size = x_train.shape[3] - 1 if len(x_train.shape) > 3 else 1
     for i in range(dimen_size):
         mean_list.append(x_train[..., i].mean())
         std_list.append(x_train[..., i].std())

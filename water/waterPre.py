@@ -29,7 +29,7 @@ def merge_one_factor(input_file, inc ,out_dir):
             merge = pd.merge(merge, one, on='time')
     merge.set_index(keys='time', inplace=True)
     # file_name = '../data/water/single/merge' + str(inc) +'.h5'
-    file_name = out_dir + '/singleFac/merge' + str(inc) +'.h5'
+    file_name = out_dir + '/merge' + str(inc) +'.h5'
     merge.to_hdf(file_name, key='merge', index=False)
     # E:\project\mvp\Graph-WaveNet\data\water\上坂\singleFac
     return file_name
@@ -212,6 +212,9 @@ def generate_one_site_one_factor(root_dir, factor_index,site_index,
     y = np.squeeze(y)
 
     print("x shape: ", x.shape, ", y shape: ", y.shape)
+    per = np.random.permutation(x.shape[0])
+    x = x[per]
+    y = y[per]
     # Write the data into npz file.
     num_samples = x.shape[0]
     num_test = round(num_samples * 0.2)
@@ -264,10 +267,14 @@ def get_adj_file(root_dir,num_nodes,file_name):
     # num_node = 5
 
     # 生成邻接矩阵，对角矩阵
-    x = [8.0 for _ in range(num_nodes)]
-    adj = np.diag(x)
+    # x = [8.0 for _ in range(num_nodes)]
+    # adj = np.diag(x)
+    # ones = np.ones([num_nodes, num_nodes])
+    # adj = adj + ones
+
+    # 生成全一矩阵
     ones = np.ones([num_nodes, num_nodes])
-    adj = adj + ones
+    adj = ones
 
     # adj_df = pd.read_csv(root_dir + '/adjs/adj_shangban2.csv')
     # adj_df = adj_df.fillna(0)
@@ -395,18 +402,18 @@ def generate_data(input_csv, output_dir,site_num,factor_num,seq_length_x, seq_le
 
 if __name__ == "__main__":
     # ######### 生成全站点多因子数据集！！
-    merge_all_factor('../data/water/shangban/water2020_linear_no_strange.csv', '../data/water/shangban/all/mergeAll.h5',
-                     ids_shangban,[0,1,2,3,6,8])
-    generate_data('../data/water/shangban/all/mergeAll.h5', '../data/water/shangban/all',
-                  site_num = 10,factor_num=6,seq_length_x=24, seq_length_y=3)
+    # merge_all_factor('../data/water/shangban/water2020_linear_no_strange.csv', '../data/water/shangban/all/mergeAll.h5',
+    #                  ids_shangban,[0,1,2,3,6,8])
+    # generate_data('../data/water/shangban/all/mergeAll.h5', '../data/water/shangban/all',
+    #               site_num = 10,factor_num=6,seq_length_x=24, seq_length_y=3)
 
     # ####### 单因子数据集
-    # for i in range(9):
-    #     file_name = merge_one_factor('../data/water/shangban/water2020_linear_no_strange.csv',i,'../data/water/shangban')
-    #     generate_dataset(file_name,'../data/water/shangban/singleFac/'+str(i)+'/',24,3)
-    #
+    for i in range(9):
+        file_name = merge_one_factor('../data/water/shangban/water2020_day.csv',i,'../data/water/shangban/daySingleFac')
+        generate_dataset(file_name,'../data/water/shangban/daySingleFac/'+str(i)+'/',24,3)
 
-    # #### 生成单站点单因子数据集
+
+    #### 生成单站点单因子数据集
     # for i in range(len(factors)):
     #     file_name = merge_one_factor('../data/water/shangban/water2020_linear_no_strange.csv',i,'../data/water/shangban')
     # for site in range(len(ids_shangban)):
@@ -427,5 +434,5 @@ if __name__ == "__main__":
     #                       ids_shangban, [0, 1, 2, 3, 6, 8],
     #                       24, 3)
     #
-    # get_adj_file('../data/water/changtai', 60, 'adj_60_16eye_one.pkl')
+    # get_adj_file('../data/water/shangban', 10, 'adj_all_one.pkl')
     pass

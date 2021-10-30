@@ -25,13 +25,13 @@ class linear(nn.Module):
 
 class gcnWeight(nn.Module):
     def __init__(self,c_in,c_out,dropout,support_len,order,num_nodes,device):
-        super(gcn,self).__init__()
+        super(gcnWeight,self).__init__()
         self.nconv = nconv()
         c_in = (order*support_len+1)*c_in
         self.mlp = linear(c_in,c_out)
         self.dropout = dropout
         self.order = order
-        self.weight = nn.Parameter(torch.randn(num_nodes, 11).to(device), requires_grad=True).to(device)
+        self.weight = nn.Parameter(torch.randn(num_nodes, num_nodes).to(device), requires_grad=True).to(device)
 
     def forward(self,x,support):
         out = [x]
@@ -163,8 +163,10 @@ class gwnet(nn.Module):
                 receptive_field += additional_scope
                 additional_scope *= 2
                 if self.gcn_bool:
-                    self.gconv.append(gcn(dilation_channels,residual_channels,dropout,
-                                          support_len=self.supports_len,order=3,num_nodes=num_nodes,device=device))
+                    # self.gconv.append(gcn(dilation_channels,residual_channels,dropout,
+                    #                       support_len=self.supports_len,order=3,num_nodes=num_nodes,device=device))
+                    self.gconv.append(gcnWeight(dilation_channels, residual_channels, dropout,
+                                          support_len=self.supports_len, order=3, num_nodes=num_nodes, device=device))
 
         self.end_conv_1 = nn.Conv2d(in_channels=skip_channels,
                                   out_channels=end_channels,
@@ -199,8 +201,9 @@ class gwnet(nn.Module):
             # 原始算法
             adp = F.softmax(F.relu(torch.mm(self.nodevec1, self.nodevec2)), dim=1)
 
-
             new_supports = self.supports + [adp]
+            # 不加入自适应！！！
+            # new_supports = self.supports
 
             # 保留
             self.adj = adp
