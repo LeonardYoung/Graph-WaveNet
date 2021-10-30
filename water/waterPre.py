@@ -306,14 +306,20 @@ def norm_data(input_csv, output):
     norm_data_df.to_csv(output, index=False)
 
 
-# 2.站点分离
-def merge_all_factor(input_csv, output):
-    df = pd.read_csv(input_csv, usecols=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11])
+# 2.因子独立出来。最后的列变成 站点a因子1,站点a因子2,站点a因子3,站点b因子1,站点b因子2,站点b因子3......
+def merge_all_factor(input_csv, output,include_site,include_factor):
+    # 筛选因子
+    cols = [i + 3 for i in include_factor]
+    cols = [1, 2] + cols
+
+    df = pd.read_csv(input_csv, usecols=cols)
+    # df = pd.read_csv(input_csv, usecols=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11])
     merge = None
-    for site in df['站点名称'].unique().tolist():
+    for site in include_site:
         one = df.loc[df['站点名称'] == site]
-        one.columns = ['time', 'site'] + [site + str(i) for i in range(9)]
-        one = one[['time'] + [site + str(i) for i in range(9)]]
+
+        one.columns = ['time', 'site'] + [site + str(i) for i in range(len(include_factor))]
+        one = one[['time'] + [site + str(i) for i in range(len(include_factor))]]
         if merge is None:
             merge = one
         else:
@@ -323,12 +329,11 @@ def merge_all_factor(input_csv, output):
 
 
 # 3.生成数据
-def generate_data(input_csv, output_dir):
+def generate_data(input_csv, output_dir,site_num,factor_num,seq_length_x, seq_length_y):
     df = pd.read_hdf(input_csv)
     args = {}
 
-    seq_length_x, seq_length_y, y_start = 24, 24, 1
-    site_num, factor_num = 11, 9
+    y_start = 1
 
     x_offsets = np.sort(np.concatenate((np.arange(-(seq_length_x - 1), 1, 1),)))
     y_offsets = np.sort(np.arange(y_start, (seq_length_y + 1), 1))
@@ -360,6 +365,9 @@ def generate_data(input_csv, output_dir):
     y = np.stack(y, axis=0)
 
     print("x shape: ", x.shape, ", y shape: ", y.shape)
+    per = np.random.permutation(x.shape[0])
+    x = x[per]
+    y = y[per]
     # Write the data into npz file.
     num_samples = x.shape[0]
     num_test = round(num_samples * 0.2)
@@ -386,12 +394,11 @@ def generate_data(input_csv, output_dir):
 
 
 if __name__ == "__main__":
-    # norm_data('../data/water/water2020.csv', '../data/water/norm2020.csv')
-    # merge_all_factor('../data/water/norm2020.csv', '../data/water/normMergeAll.h5')
-    # generate_data('../data/water/normMergeAll.h5', '../data/water/normGen')
-
-    # merge_all_factor('../data/water/water2020.csv', '../data/water/mergeAll.h5')
-    # generate_data('../data/water/mergeAll.h5', '../data/water/genAll')
+    # ######### 生成全站点多因子数据集！！
+    merge_all_factor('../data/water/shangban/water2020_linear_no_strange.csv', '../data/water/shangban/all/mergeAll.h5',
+                     ids_shangban,[0,1,2,3,6,8])
+    generate_data('../data/water/shangban/all/mergeAll.h5', '../data/water/shangban/all',
+                  site_num = 10,factor_num=6,seq_length_x=24, seq_length_y=3)
 
     # ####### 单因子数据集
     # for i in range(9):
@@ -408,12 +415,12 @@ if __name__ == "__main__":
 
 
     #### 生成多因子数据集（每个因子是一个节点）
-    # 上坂
-    generate_multi_factor('../data/water/shangban/water2020_linear_no_strange.csv','../data/water/shangban/multiFac',
-                          ids_shangban,[0,1,2,3,6,8],
-                          24,3)
-
-    get_adj_file('../data/water/shangban', 60,'adj_60_8eye_one.pkl')
+    # # 上坂
+    # generate_multi_factor('../data/water/shangban/water2020_linear_no_strange.csv','../data/water/shangban/multiFac',
+    #                       ids_shangban,[0,1,2,3,6,8],
+    #                       24,3)
+    #
+    # get_adj_file('../data/water/shangban', 60,'adj_60_8eye_one.pkl')
 
     # 长泰
     # generate_multi_factor('../data/water/changtai/water_linear.csv', '../data/water/changtai/multiFac',

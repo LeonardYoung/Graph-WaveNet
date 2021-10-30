@@ -39,14 +39,14 @@ def train(engine,dataloader):
     for step, (x, y) in enumerate(dataloader['train_loader'].get_iterator()):
         train_x = torch.Tensor(x).to(engine.device).transpose(1, 3)
         train_y = torch.Tensor(y).to(engine.device).transpose(1, 3)
-        engine.train(train_x, train_y[:, 0, :, :])
+        engine.train(train_x, train_y[:, 0:-1, :, :])
 
 
 def validate(engine,dataloader):
     for step, (x, y) in enumerate(dataloader['val_loader'].get_iterator()):
         test_x = torch.Tensor(x).to(engine.device).transpose(1, 3)
         test_y = torch.Tensor(y).to(engine.device).transpose(1, 3)
-        metrics = engine.eval(test_x, test_y[:, 0, :, :])
+        metrics = engine.eval(test_x, test_y[:, 0:-1, :, :])
         return metrics
 
 
@@ -57,7 +57,10 @@ def test(engine,dataloader,model_path):
 
     outputs = []
     realy = torch.Tensor(dataloader['y_test']).to(engine.device)
-    realy = realy.transpose(1, 3)[:, 0, :, :]
+    if args.in_dim == 2:
+        realy = realy.transpose(1, 3)[:, 0, :, :]
+    else:
+        realy = realy.transpose(1, 3)[:, 0:-1, :, :]
 
     engine.model.eval()
     for iter, (x, y) in enumerate(dataloader['test_loader'].get_iterator()):
@@ -86,22 +89,31 @@ def test(engine,dataloader,model_path):
                 print(adj[i][j], end=',')
             print('')
 
-    amae = []
-    amape = []
-    armse = []
-    for i in range(args.num_nodes):
-        pred = scaler.inverse_transform(yhat[:, i, :])
-        real = realy[:, i, :]
-        metrics = util.metric(pred, real)
-        log = 'Evaluate model on site {:d} , Test MAE: {:.4f}, Test MAPE: {:.4f}, Test RMSE: {:.4f}'
-        print(log.format(i + 1, metrics[0], metrics[1], metrics[2]))
-        amae.append(metrics[0])
-        amape.append(metrics[1])
-        armse.append(metrics[2])
+    # 单维
+    if args.in_dim == 2:
+        amae = []
+        amape = []
+        armse = []
+        for i in range(args.num_nodes):
+            pred = scaler.inverse_transform(yhat[:, i, :])
+            real = realy[:, i, :]
+            metrics = util.metric(pred, real)
+            log = 'Evaluate model on site {:d} , Test MAE: {:.4f}, Test MAPE: {:.4f}, Test RMSE: {:.4f}'
+            print(log.format(i + 1, metrics[0], metrics[1], metrics[2]))
+            amae.append(metrics[0])
+            amape.append(metrics[1])
+            armse.append(metrics[2])
 
-    log = 'On average over all site, Test MAE: {:.4f}, Test MAPE: {:.4f}, Test RMSE: {:.4f}'
-    print(log.format(np.mean(amae), np.mean(amape), np.mean(armse)))
-    return np.mean(amae), np.mean(amape), np.mean(armse)
+        log = 'On average over all site, Test MAE: {:.4f}, Test MAPE: {:.4f}, Test RMSE: {:.4f}'
+        print(log.format(np.mean(amae), np.mean(amape), np.mean(armse)))
+        return np.mean(amae), np.mean(amape), np.mean(armse)
+    # 多维
+    else:
+        pred = scaler.inverse_transform(yhat)
+        real = realy
+        metrics = util.metric(pred, real)
+        log = 'Evaluate model on  Test MAE: {:.4f}, Test MAPE: {:.4f}, Test RMSE: {:.4f}'
+        print(log.format(metrics[0], metrics[1], metrics[2]))
 
 
 def run_once():
@@ -152,6 +164,37 @@ def run_once():
 
 
 if __name__ == "__main__":
+
+    args.aptonly = True
+    args.addaptadj = True
+    args.randomadj = True
+    args.adjtype = 'doubletransition'
+    # 输出维度
+    args.seq_length = 3
+    args.device = 'cuda:1'
+    # args.device = 'cpu'
+
+    # ######  单因子全站点实验参数
+    args.gcn_bool = True
+    args.epochs = 100
+    args.data = 'data/water/shangban/singleFac/0'
+    args.adjdata = 'data/water/shangban/adjs/adj_shangban2.pkl'
+    # 输入维度（包括时间维度）
+    args.in_dim = 2
+    # 图节点数
+    args.num_nodes = 10
+
+    ######  全因子多站点实验参数
+    # args.gcn_bool = False
+    # args.epochs = 200
+    # args.data = 'data/water/shangban/all'
+    # args.adjdata = 'data/water/shangban/adjs/adj_shangban2.pkl'
+    # # 输入维度（包括时间维度）
+    # args.in_dim = 7
+    # # 图节点数
+    # args.num_nodes = 10
+
+
     # ############跑一次
     t1 = time.time()
     run_once()

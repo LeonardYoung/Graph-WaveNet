@@ -56,15 +56,34 @@ class StandardScaler():
     Standard the input
     """
 
-    def __init__(self, mean, std):
+    def __init__(self,dimen_size, mean, std):
         self.mean = mean
         self.std = std
+        self.dimen_size = dimen_size
 
     def transform(self, data):
-        return (data - self.mean) / self.std
+        # 单维
+        if self.dimen_size == 1:
+            return (data - self.mean[0]) / self.std[0]
+        # 多维
+        resule_list = []
+        for i in range(self.dimen_size):
+            mean_reslut = (data[..., i] - self.mean[i]) / self.std[i]
+            resule_list.append(np.expand_dims(mean_reslut, axis=-1))
+        result = np.concatenate(resule_list, axis=-1)
+        return result
 
     def inverse_transform(self, data):
-        return (data * self.std) + self.mean
+        # 单维
+        if self.dimen_size == 1:
+            return (data * self.std[0]) + self.mean[0]
+        # 多维
+        std_tensor = torch.ones_like(data, requires_grad=False)
+        mean_tensor = torch.zeros_like(data, requires_grad=False)
+        for i in range(self.dimen_size):
+            std_tensor[:, i, :, :] = self.std[i]
+            mean_tensor[:, i, :, :] = self.mean[i]
+        return (data * std_tensor) + mean_tensor
 
 
 
@@ -153,19 +172,24 @@ def load_dataset(dataset_dir, batch_size, valid_batch_size= None, test_batch_siz
         data['x_' + category] = cat_data['x']
         data['y_' + category] = cat_data['y']
 
-    dimon_len = len(data['x_train'].shape)
+    x_train = data['x_train']
+    mean_list = []
+    std_list = []
+    dimen_size = x_train.shape[3] - 1
+    for i in range(dimen_size):
+        mean_list.append(x_train[..., i].mean())
+        std_list.append(x_train[..., i].std())
 
-    if dimon_len == 2:
-        scaler = StandardScaler(mean=data['x_train'].mean(), std=data['x_train'].std())
-    else:
-        scaler = StandardScaler(mean=data['x_train'][..., 0].mean(), std=data['x_train'][..., 0].std())
-    # Data format
+    scaler = StandardScaler(dimen_size=dimen_size, mean=mean_list, std=std_list)
+
+    # 标准化
     if transf:
         for category in ['train', 'val', 'test']:
-            if dimon_len == 2:
+            if dimen_size == 2:
                 data['x_' + category] = scaler.transform(data['x_' + category])
             else:
-                data['x_' + category][..., 0] = scaler.transform(data['x_' + category][..., 0])
+                data['x_' + category][..., 0:-1] = scaler.transform(data['x_' + category][..., 0:-1])
+
     data['train_loader'] = DataLoader(data['x_train'], data['y_train'], batch_size)
     data['val_loader'] = DataLoader(data['x_val'], data['y_val'], valid_batch_size)
     data['test_loader'] = DataLoader(data['x_test'], data['y_test'], test_batch_size)

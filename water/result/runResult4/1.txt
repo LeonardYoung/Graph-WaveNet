@@ -1,0 +1,52 @@
+ssh://root@172.17.171.8:22/home/s304/miniconda3/envs/ysj_torch/bin/python -u /media/s304/Data/yangsj/project/waveNet2/water/waterTrainSingle.py --aptonly --gcn_bool --addaptadj --randomadj --adjtype doubletransition --data data/water/shangban/singleFac/0 --adjdata data/water/shangban/adjs/adj_shangban2.pkl --device cuda:1 --in_dim 2 --epochs 10 --num_nodes 10 --seq_length 3
+Namespace(addaptadj=True, adjdata='data/water/shangban/adjs/adj_shangban2.pkl', adjtype='doubletransition', aptonly=True, batch_size=64, data='data/water/shangban/all', device='cuda:1', dropout=0.3, epochs=200, expid=1, gcn_bool=True, in_dim=7, learning_rate=0.001, nhid=32, num_nodes=10, print_every=50, randomadj=True, save='./garage/metr', seq_length=3, weight_decay=0.0001)
+start training...
+Epoch:1,validate loss:1.208069086074829
+Validation loss decreased (inf --> 1.208069).  Saving model ...
+Epoch:2,validate loss:1.202768087387085
+Validation loss decreased (1.208069 --> 1.202768).  Saving model ...
+Epoch:3,validate loss:1.2050672769546509
+Epoch:4,validate loss:1.2005454301834106
+Validation loss decreased (1.202768 --> 1.200545).  Saving model ...
+Epoch:5,validate loss:1.200846552848816
+Epoch:6,validate loss:1.2010301351547241
+Epoch:7,validate loss:1.2035059928894043
+Epoch:8,validate loss:1.1982861757278442
+Validation loss decreased (1.200545 --> 1.198286).  Saving model ...
+Epoch:9,validate loss:1.1988846063613892
+Epoch:10,validate loss:1.199588656425476
+Epoch:11,validate loss:1.199263334274292
+Epoch:12,validate loss:1.1987178325653076
+Epoch:13,validate loss:1.2003647089004517
+Epoch:14,validate loss:1.200331687927246
+Epoch:15,validate loss:1.2015875577926636
+Epoch:16,validate loss:1.2058430910110474
+Epoch:17,validate loss:1.2020715475082397
+Epoch:18,validate loss:1.2030503749847412
+Epoch:19,validate loss:1.2023956775665283
+Epoch:20,validate loss:1.2023561000823975
+Epoch:21,validate loss:1.202651023864746
+Epoch:22,validate loss:1.2040706872940063
+Epoch:23,validate loss:1.209240198135376
+Epoch:24,validate loss:1.2039777040481567
+Epoch:25,validate loss:1.206396222114563
+Epoch:26,validate loss:1.2085729837417603
+Epoch:27,validate loss:1.2080836296081543
+Epoch:28,validate loss:1.211778998374939
+Early stopping.
+Training finished
+邻接矩阵：min=0.000,max=0.996,avg=0.100
+0.000859739,0.0013535852,0.7526365,0.011927163,1.8532784e-05,0.0015246208,8.3078456e-05,0.23147388,0.000102842394,2.0008203e-05,
+0.00016630844,5.6899266e-06,5.6899266e-06,0.00031089035,0.9963232,1.5221153e-05,5.6899266e-06,0.003134786,5.6899266e-06,2.6781756e-05,
+0.0002070776,0.0002070776,0.0002070776,0.0002070776,0.21376804,0.0010588901,0.0002070776,0.7837235,0.0002070776,0.0002070776,
+3.6350528e-05,0.0055815117,0.84908944,0.13871305,0.00014538215,0.00067825743,0.00028316476,3.6350528e-05,0.0032837132,0.0021527489,
+0.0014069047,0.92666847,0.036804017,0.0007754483,0.0007754483,0.0007754483,0.0007754483,0.0007754483,0.03046787,0.0007754483,
+0.0077583943,0.0077583943,0.07966066,0.0077583943,0.031897236,0.0077583943,0.0077583943,0.02033384,0.0077583943,0.8215579,
+0.3643186,0.021678284,0.14425938,0.031437647,0.021678284,0.021678284,0.021678284,0.17069705,0.021678284,0.1808959,
+0.766323,0.12600008,0.00059681176,0.0047209556,0.00059681176,0.002094984,0.00059681176,0.097874925,0.0005989325,0.00059681176,
+0.14102761,3.500507e-05,0.81892985,0.0026173643,0.0074635977,3.500507e-05,4.5615874e-05,0.008367179,0.003906478,0.01757233,
+0.09455545,0.09455545,0.09455545,0.09455545,0.09455545,0.1490009,0.09455545,0.09455545,0.09455545,0.09455545,
+Evaluate model on  Test MAE: 1.1741, Test MAPE: 2.0501, Test RMSE: 1.7510
+Total time spent: 28.5537
+
+Process finished with exit code 0

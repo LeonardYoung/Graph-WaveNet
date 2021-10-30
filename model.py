@@ -81,7 +81,7 @@ class gcn(nn.Module):
 class gwnet(nn.Module):
     def __init__(self, device, num_nodes, dropout=0.3, supports=None, gcn_bool=True, addaptadj=True,
                  aptinit=None, in_dim=2,out_dim=12,residual_channels=32,dilation_channels=32,
-                 skip_channels=256,end_channels=512,kernel_size=2,blocks=8,layers=2):
+                 skip_channels=256,end_channels=512,kernel_size=2,blocks=6,layers=2):
         super(gwnet, self).__init__()
         self.dropout = dropout
         self.blocks = blocks
@@ -97,12 +97,22 @@ class gwnet(nn.Module):
         self.bn = nn.ModuleList()
         self.gconv = nn.ModuleList()
 
+        # 单维度
+        if in_dim == 2:
+            self.blocks = 8
+        # 多维度
+        else:
+            self.blocks = 6
+            # residual_channels = 64
+            # end_channels = 64
+
         self.start_conv = nn.Conv2d(in_channels=in_dim,
                                     out_channels=residual_channels,
                                     kernel_size=(1,1))
         self.supports = supports
         self.adj = None
-        # self.origin_adj = supports[-1]
+
+
 
         receptive_field = 1
 
@@ -126,7 +136,7 @@ class gwnet(nn.Module):
                 self.nodevec2 = nn.Parameter(initemb2, requires_grad=True).to(device)
                 self.supports_len += 1
 
-        for b in range(blocks):
+        for b in range(self.blocks):
             additional_scope = kernel_size - 1
             new_dilation = 1
             for i in range(layers):
