@@ -175,12 +175,14 @@ def data_clean(file_in, file_out, flag_save=False, fill_method = 'nearest'):
     # data_df['电导率'][data_df['电导率'] == 0] = None
     data_df['conductFlag'][data_df['电导率'].isna()] = 1
     data_df['电导率'].interpolate(method=fill_method, inplace=True)  # 用前一时刻的值填充缺失值
+    data_df['电导率'][data_df['电导率'].isna()] = 439.762  # 插值无法处理的地方，设为平均值
 
     # data_df.reset_index(inplace=True)
     # data_df['总氮'][data_df['总氮'] <= 0] = None  # 总氮=0：视为缺失值，和缺失值一起处理
     # data_df['总氮'][data_df['总氮'] > 100] = None  # 总氮>100：视为缺失值，和缺失值一起处理
     data_df['TNFlag'][data_df['总氮'].isna()] = 1
     data_df['总氮'].interpolate(method=fill_method, inplace=True)  # 用前一时刻的值填充缺失值
+    data_df['总氮'][data_df['总氮'].isna()] = 6.4186 # 插值无法处理的地方，设为平均值
 
     # data_df['氨氮'][data_df['氨氮'] == 0] = None  # 氨氮=0：视为缺失值，和缺失值一起处理
     # data_df['氨氮'] = np.where(data_df['氨氮'] > data_df['总氮'], None, data_df['氨氮'])
@@ -197,6 +199,10 @@ def data_clean(file_in, file_out, flag_save=False, fill_method = 'nearest'):
 
     # data_df['高锰酸盐指数'][data_df['高锰酸盐指数'].isna()] = 5 #无法插值的地方，使用平均值替代。高锰酸盐的均值差不多是5
     data_df.reset_index(inplace=True)
+
+    # 有些算法首尾无法插值得到，于是用邻近点补齐
+    for fac in factors:
+        data_df[fac].interpolate(method='nearest', inplace=True)
 
     data_df = data_df.round(3)
 
@@ -272,30 +278,32 @@ def conver_to_seq_csv(input,output):
 if __name__ == '__main__':
     # 预处理监测站点数据
     ######## 上坂
-    # 步骤1：
-    root = r"E:\project\mvp\Graph-WaveNet\data\water\shangban\origin"
-    data_fix_concat(root,'xls','./temp/1.csv')
-
-    # 步骤2：
-    data_transpose('./temp/1.csv', './temp/2.csv')
-    # 步骤3：
-    data_insert_time('./temp/2.csv','./temp/3.csv','2020-01-01 00:00:00', '2020-10-31 23:00:00','24H')
-    # 步骤4
-    data_clean('./temp/3.csv', './temp/4.csv',False,'linear')
-    # 可视化
-    conver_to_seq_csv('./temp/4.csv', './temp/5.csv')
-
-    # ######### 长泰
     # # 步骤1：
-    # root = r"E:\project\mvp\Graph-WaveNet\data\water\changtai\origin"
-    # data_fix_concat(root, 'csv', './temp/a.csv')
+    # root = r"E:\project\mvp\Graph-WaveNet\data\water\shangban\origin"
+    # data_fix_concat(root,'xls','./temp/1.csv')
     #
     # # 步骤2：
-    # data_transpose('./temp/a.csv', './temp/b.csv')
+    # data_transpose('./temp/1.csv', './temp/2.csv')
     # # 步骤3：
-    # data_insert_time('./temp/b.csv', './temp/c.csv', '2019-10-01 00:00:00', '2021-09-30 23:00:00', '4H')
+    # data_insert_time('./temp/2.csv','./temp/3.csv','2020-01-01 00:00:00', '2020-10-31 23:00:00','4H')
     # # 步骤4
-    # data_clean('./temp/c.csv', './temp/d.csv',False,'linear')
+    # data_clean('./temp/3.csv', './temp/4.csv',False,'linear')
+    # # 可视化
+    # conver_to_seq_csv('./temp/4.csv', './temp/5.csv')
+
+    # ######### 长泰
+    # 步骤1：
+    root = r"E:\project\mvp\Graph-WaveNet\data\water\changtai\origin"
+    data_fix_concat(root, 'csv', './temp/a.csv')
+
+    # 步骤2：
+    data_transpose('./temp/a.csv', './temp/b.csv')
+    # 步骤3：
+    data_insert_time('./temp/b.csv', './temp/c.csv', '2019-10-01 00:00:00', '2021-09-30 23:00:00', '4H')
+    # 步骤4
+    data_clean('./temp/c.csv', './temp/d.csv',False,'linear')
+    # 可视化
+    conver_to_seq_csv('./temp/d.csv', './temp/e.csv')
 
 
 

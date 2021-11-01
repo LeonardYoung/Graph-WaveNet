@@ -10,6 +10,7 @@ from utils import earlystopping
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--device',type=str,default='cuda:1',help='')
+parser.add_argument('--adjlearn',type=str,default='GLM',help='adj learn algorithm')
 parser.add_argument('--data',type=str,default='data/METR-LA',help='data path')
 parser.add_argument('--adjdata',type=str,default='data/sensor_graph/adj_mx.pkl',help='adj data path')
 parser.add_argument('--adjtype',type=str,default='doubletransition',help='adj type')
@@ -30,6 +31,7 @@ parser.add_argument('--print_every',type=int,default=50,help='')
 #parser.add_argument('--seed',type=int,default=99,help='random seed')
 parser.add_argument('--save',type=str,default='./garage/metr',help='save path')
 parser.add_argument('--expid',type=int,default=1,help='experiment id')
+
 
 args = parser.parse_args()
 
@@ -144,7 +146,7 @@ def run_once():
     model_save_path = "./data/save_models/singFactor/waveNet.pth"
     early_stopping = earlystopping.EarlyStopping(patience=20, path=model_save_path, verbose=True)
 
-    engine = trainer(scaler, args.in_dim, args.seq_length, args.num_nodes, args.nhid, args.dropout,
+    engine = trainer(args.adjlearn, scaler, args.in_dim, args.seq_length, args.num_nodes, args.nhid, args.dropout,
                          args.learning_rate, args.weight_decay, device, supports, args.gcn_bool, args.addaptadj,
                          adjinit)
 
@@ -165,7 +167,7 @@ def run_once():
 
 if __name__ == "__main__":
 
-    args.aptonly = True ###
+    args.aptonly = True
     args.addaptadj = True
     args.randomadj = True
     args.adjtype = 'doubletransition'
@@ -174,10 +176,11 @@ if __name__ == "__main__":
     args.device = 'cuda:1'
     # args.device = 'cpu'
 
+
     # # ######  单因子全站点实验参数
-    args.gcn_bool = False
+    args.gcn_bool = True
     args.epochs = 200
-    args.data = 'data/water/shangban/daySingleFac/0'
+    args.data = 'data/water/shangban/singleFac/0'
     args.adjdata = 'data/water/shangban/adjs/adj_all_one.pkl'
     # 输入维度（包括时间维度）
     args.in_dim = 2
@@ -204,34 +207,46 @@ if __name__ == "__main__":
     # # 图节点数
     # args.num_nodes = 10
 
-
-    # ############跑一次
+    # ############跑1次
     t1 = time.time()
     run_once()
     t2 = time.time()
     print("Total time spent: {:.4f}".format(t2 - t1))
 
 
+    # ############跑5次
+    # t1 = time.time()
+    # mae_list = []
+    # for i in range(5):
+    #     print("data::{},running {} st".format(args.data,i+1))
+    #     mae = run_once()
+    #     print(mae)
+    #     mae_list.append(mae[0])
+    # print("MAE={}".format(np.mean(mae_list)))
+    # t2 = time.time()
+    # print("Total time spent: {:.4f}".format(t2 - t1))
+
+
     # ########### 自动进行单因子实验
     # t1 = time.time()
     # args.epochs = 200
     # result_log = ""
+    # args.gcn_bool = True
     #
     # factor_index = [0, 1, 2, 3, 6, 8]
     #
     # for fac in factor_index:
     #     args.data = 'data/water/shangban/singleFac/' + str(fac)
-    #     for gcn in range(1):
-    #         args.gcn_bool = True # if gcn == 0 else True
-    #         m_mae_list = []
-    #         for i in range(5):
-    #             print("data::{},running {} st".format(args.data,i+1))
-    #             mae = run_once()
-    #             print(mae)
-    #             m_mae_list.append(mae[0])
-    #         m_mae = np.mean(m_mae_list)
-    #         print(m_mae_list)
-    #         result_log += "data=={},gcn={},MAE={:.4f}\n".format(args.data,gcn, m_mae)
+    #
+    #     m_mae_list = []
+    #     for i in range(5):
+    #         print("data::{},running {} st".format(args.data,i+1))
+    #         mae = run_once()
+    #         print(mae)
+    #         m_mae_list.append(mae[0])
+    #     m_mae = np.mean(m_mae_list)
+    #     print(m_mae_list)
+    #     result_log += "data=={},MAE={:.4f}\n".format(args.data, m_mae)
     #
     #
     # print('------------------finished-----------------------')

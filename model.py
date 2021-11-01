@@ -14,6 +14,15 @@ class nconv(nn.Module):
         return x.contiguous()
 
 
+class nconvGLM(nn.Module):
+    def __init__(self):
+        super(nconvGLM,self).__init__()
+
+    def forward(self,x, A):
+        x = torch.einsum('ncvl,nvw->ncwl',(x,A))
+        return x.contiguous()
+
+
 class linear(nn.Module):
     def __init__(self,c_in,c_out):
         super(linear,self).__init__()
@@ -78,8 +87,79 @@ class gcn(nn.Module):
         return h
 
 
+class gcnGLM(nn.Module):
+    def __init__(self,c_in,c_out,dropout,support_len,order,num_nodes,device):
+        super(gcnGLM,self).__init__()
+        self.nconvGLM = nconvGLM()
+        c_in = (order*support_len+1)*c_in
+        self.mlp = linear(c_in,c_out)
+        self.dropout = dropout
+        self.order = order
+        # self.nodevec1 = nn.Parameter(torch.randn(num_nodes, 11).to(device), requires_grad=True).to(device)
+        self.weight = nn.Parameter(torch.randn(num_nodes, 11).to(device), requires_grad=True).to(device)
+
+    def forward(self,x,adjs):
+        out = [x]
+        x1 = self.nconvGLM(x,adjs)
+        out.append(x1)
+        for k in range(2, self.order + 1):
+            x2 = self.nconvGLM(x1,adjs)
+            out.append(x2)
+            x1 = x2
+
+        h = torch.cat(out,dim=1)
+        h = self.mlp(h)
+        h = F.dropout(h, self.dropout, training=self.training)
+        return h
+
+
+class GLM(nn.Module):
+    def __init__(self, in_dim,num_node,input_length):
+        super(GLM, self).__init__()
+        self.in_dim = in_dim
+        self.num_node = num_node
+        self.input_length = input_length
+
+        self.hidden = 32
+
+        self.start_conv = nn.Conv2d(in_channels=in_dim,
+                                    out_channels=self.hidden,
+                                    kernel_size=(1,1))
+        self.mlp1 = nn.Linear(input_length,1)
+        self.mlp2 = nn.Linear(self.hidden,64)
+        self.mlp3 = nn.Linear(64,self.num_node)
+
+        self.mlp4 = nn.Linear(self.in_dim * self.input_length,256)
+        self.mlp5 = nn.Linear(256,128)
+        self.mlp6 = nn.Linear(128,64)
+        self.mlp7 = nn.Linear(64,32)
+        self.mlp8 = nn.Linear(32,self.num_node)
+
+    def forward(self, input):
+
+        x = F.relu(self.start_conv(input))
+        x = F.relu(self.mlp1(x))
+        x = x.squeeze(dim=3)
+        x = x.transpose(1,2)
+        x = F.relu(self.mlp2(x))
+        x = F.relu(self.mlp3(x))
+
+
+        # x = input.reshape(input.shape[0],self.num_node,-1)
+        # x = F.relu(self.mlp4(x))
+        # x = F.relu(self.mlp5(x))
+        # x = F.relu(self.mlp6(x))
+        # x = F.relu(self.mlp7(x))
+        # x = F.relu(self.mlp8(x))
+
+
+        x = F.dropout(x, 0.3, training=self.training)
+
+        return x
+
+
 class gwnet(nn.Module):
-    def __init__(self, device, num_nodes, dropout=0.3, supports=None, gcn_bool=True, addaptadj=True,
+    def __init__(self, adjlearn,device, num_nodes, dropout=0.3, supports=None, gcn_bool=True, addaptadj=True,
                  aptinit=None, in_dim=2,out_dim=12,residual_channels=32,dilation_channels=32,
                  skip_channels=256,end_channels=512,kernel_size=2,blocks=6,layers=2):
         super(gwnet, self).__init__()
@@ -89,6 +169,7 @@ class gwnet(nn.Module):
         self.gcn_bool = gcn_bool
         self.addaptadj = addaptadj
         self.device = device
+        self.adjlearn = adjlearn
 
         self.filter_convs = nn.ModuleList()
         self.gate_convs = nn.ModuleList()
@@ -96,6 +177,10 @@ class gwnet(nn.Module):
         self.skip_convs = nn.ModuleList()
         self.bn = nn.ModuleList()
         self.gconv = nn.ModuleList()
+
+        # GLM
+        self.GLM = GLM(in_dim,num_nodes,24).to(device)
+        self.GLMadjs = None
 
         # 单维度
         if in_dim == 2:
@@ -125,8 +210,8 @@ class gwnet(nn.Module):
                 self.supports = []
             if aptinit is None:
 
-                self.nodevec1 = nn.Parameter(torch.randn(num_nodes, 32).to(device), requires_grad=True).to(device)
-                self.nodevec2 = nn.Parameter(torch.randn(32, num_nodes).to(device), requires_grad=True).to(device)
+                self.nodevec1 = nn.Parameter(torch.randn(num_nodes, 10).to(device), requires_grad=True).to(device)
+                self.nodevec2 = nn.Parameter(torch.randn(10, num_nodes).to(device), requires_grad=True).to(device)
                 self.supports_len +=1
             else:
                 m, p, n = torch.svd(aptinit)
@@ -163,10 +248,16 @@ class gwnet(nn.Module):
                 receptive_field += additional_scope
                 additional_scope *= 2
                 if self.gcn_bool:
-                    # self.gconv.append(gcn(dilation_channels,residual_channels,dropout,
-                    #                       support_len=self.supports_len,order=3,num_nodes=num_nodes,device=device))
-                    self.gconv.append(gcnWeight(dilation_channels, residual_channels, dropout,
-                                          support_len=self.supports_len, order=3, num_nodes=num_nodes, device=device))
+                    if self.adjlearn == 'GLM':
+
+                        self.gconv.append(gcnGLM(dilation_channels,residual_channels,dropout,
+                                          support_len=self.supports_len,order=3,num_nodes=num_nodes,device=device))
+                    else:
+                        self.gconv.append(gcn(dilation_channels, residual_channels, dropout,
+                                              support_len=self.supports_len, order=3, num_nodes=num_nodes,
+                                              device=device))
+                    # self.gconv.append(gcnWeight(dilation_channels, residual_channels, dropout,
+                    #                       support_len=self.supports_len, order=3, num_nodes=num_nodes, device=device))
 
         self.end_conv_1 = nn.Conv2d(in_channels=skip_channels,
                                   out_channels=end_channels,
@@ -195,16 +286,17 @@ class gwnet(nn.Module):
             # 对称阵算法
             # m1 = torch.tanh(0.25 * self.nodevec1)
             # m2 = torch.tanh(0.25 * self.nodevec2)
-            # # adp = F.relu(torch.tanh(torch.mm(m1, m2.t()) - torch.mm(m2, m1.t())))
+            # adp = F.relu(torch.tanh(torch.mm(m1, m2.t()) - torch.mm(m2, m1.t())))
             # adp = F.softmax(F.relu(torch.tanh(torch.mm(m1, m2.t()) - torch.mm(m2, m1.t()))), dim=1)
             # adp = torch.triu(adp)
             # 原始算法
             adp = F.softmax(F.relu(torch.mm(self.nodevec1, self.nodevec2)), dim=1)
 
-            new_supports = self.supports + [adp]
-            # 不加入自适应！！！
-            # new_supports = self.supports
+            # GLM算法获取邻接矩阵
+            if self.adjlearn == 'GLM':
+                self.GLMadjs = self.GLM(input)
 
+            new_supports = self.supports + [adp]
             # 保留
             self.adj = adp
 
@@ -243,7 +335,9 @@ class gwnet(nn.Module):
 
 
             if self.gcn_bool and self.supports is not None:
-                if self.addaptadj:
+                if self.adjlearn == 'GLM':
+                    x = self.gconv[i](x, self.GLMadjs)
+                elif self.addaptadj:
                     x = self.gconv[i](x, new_supports)
                 else:
                     x = self.gconv[i](x,self.supports)

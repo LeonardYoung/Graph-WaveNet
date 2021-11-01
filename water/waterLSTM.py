@@ -204,7 +204,7 @@ def run_once(root_dir, site_index, factor_index,early_stopping,model_save_path,
     print('################################')
     print('runing site:{},factor:{}'.format(site_index,factor_index))
     site_code = "abcdefghijklmn"
-    dataloader = util.load_dataset(root_dir + '/singlesingle/{}{}'.format(factor_index,site_code[site_index]),
+    dataloader = util.load_dataset(root_dir + '/{}{}'.format(factor_index,site_code[site_index]),
                                    64, 64, 64, False)
 
     model = lstm(input_length, output_length).to(device)
@@ -268,7 +268,7 @@ if __name__ == '__main__':
         site_result = []
         for site in range(10):
             early_stopping = earlystopping.EarlyStopping(patience=30, path=model_save_path, verbose=True)
-            res = run_once('data/water/shangban', site, factor,early_stopping,
+            res = run_once('data/water/shangban/daysinglesingle', site, factor,early_stopping,
                            model_save_path,input_size,predict_size,train_epoch,True)
             site_result.append(res)
         all_factor_result.append(site_result)
