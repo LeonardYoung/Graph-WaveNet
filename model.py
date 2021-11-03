@@ -130,27 +130,27 @@ class GLM(nn.Module):
         self.mlp3 = nn.Linear(64,self.num_node)
 
         self.mlp4 = nn.Linear(self.in_dim * self.input_length,256)
-        self.mlp5 = nn.Linear(256,128)
-        self.mlp6 = nn.Linear(128,64)
-        self.mlp7 = nn.Linear(64,32)
-        self.mlp8 = nn.Linear(32,self.num_node)
+        self.mlp5 = nn.Linear(256,64)
+        # self.mlp6 = nn.Linear(128,64)
+        # self.mlp7 = nn.Linear(64,32)
+        self.mlp8 = nn.Linear(64,self.num_node)
 
     def forward(self, input):
 
-        x = F.relu(self.start_conv(input))
-        x = F.relu(self.mlp1(x))
-        x = x.squeeze(dim=3)
-        x = x.transpose(1,2)
-        x = F.relu(self.mlp2(x))
-        x = F.relu(self.mlp3(x))
+        # x = F.relu(self.start_conv(input))
+        # x = F.relu(self.mlp1(x))
+        # x = x.squeeze(dim=3)
+        # x = x.transpose(1,2)
+        # x = F.relu(self.mlp2(x))
+        # x = F.relu(self.mlp3(x))
 
 
-        # x = input.reshape(input.shape[0],self.num_node,-1)
-        # x = F.relu(self.mlp4(x))
-        # x = F.relu(self.mlp5(x))
+        x = input.reshape(input.shape[0],self.num_node,-1)
+        x = F.relu(self.mlp4(x))
+        x = F.relu(self.mlp5(x))
         # x = F.relu(self.mlp6(x))
         # x = F.relu(self.mlp7(x))
-        # x = F.relu(self.mlp8(x))
+        x = F.relu(self.mlp8(x))
 
 
         x = F.dropout(x, 0.3, training=self.training)
@@ -209,9 +209,14 @@ class gwnet(nn.Module):
             if supports is None:
                 self.supports = []
             if aptinit is None:
+                vec_length = num_nodes
+                if self.adjlearn == 'embed':
+                    vec_length = 16
+                else:
+                    vec_length = num_nodes
 
-                self.nodevec1 = nn.Parameter(torch.randn(num_nodes, 10).to(device), requires_grad=True).to(device)
-                self.nodevec2 = nn.Parameter(torch.randn(10, num_nodes).to(device), requires_grad=True).to(device)
+                self.nodevec1 = nn.Parameter(torch.randn(num_nodes, vec_length).to(device), requires_grad=True).to(device)
+                self.nodevec2 = nn.Parameter(torch.randn(vec_length, num_nodes).to(device), requires_grad=True).to(device)
                 self.supports_len +=1
             else:
                 m, p, n = torch.svd(aptinit)
@@ -252,12 +257,15 @@ class gwnet(nn.Module):
 
                         self.gconv.append(gcnGLM(dilation_channels,residual_channels,dropout,
                                           support_len=self.supports_len,order=3,num_nodes=num_nodes,device=device))
+                    elif self.adjlearn == 'weigthed' or self.adjlearn == 'weigthedOnly':
+                        self.gconv.append(gcnWeight(dilation_channels, residual_channels, dropout,
+                                                    support_len=self.supports_len, order=3, num_nodes=num_nodes,
+                                                    device=device))
                     else:
                         self.gconv.append(gcn(dilation_channels, residual_channels, dropout,
                                               support_len=self.supports_len, order=3, num_nodes=num_nodes,
                                               device=device))
-                    # self.gconv.append(gcnWeight(dilation_channels, residual_channels, dropout,
-                    #                       support_len=self.supports_len, order=3, num_nodes=num_nodes, device=device))
+
 
         self.end_conv_1 = nn.Conv2d(in_channels=skip_channels,
                                   out_channels=end_channels,
@@ -272,6 +280,7 @@ class gwnet(nn.Module):
         self.receptive_field = receptive_field
 
     def forward(self, input):
+        input_numpy = input.to('cpu').numpy()
         in_len = input.size(3)
         if in_len<self.receptive_field:
             x = nn.functional.pad(input,(self.receptive_field-in_len,0,0,0))
@@ -289,16 +298,22 @@ class gwnet(nn.Module):
             # adp = F.relu(torch.tanh(torch.mm(m1, m2.t()) - torch.mm(m2, m1.t())))
             # adp = F.softmax(F.relu(torch.tanh(torch.mm(m1, m2.t()) - torch.mm(m2, m1.t()))), dim=1)
             # adp = torch.triu(adp)
-            # 原始算法
-            adp = F.softmax(F.relu(torch.mm(self.nodevec1, self.nodevec2)), dim=1)
+            if self.adjlearn == 'weigthed' or self.adjlearn == 'embed':
+                adp = F.softmax(F.relu(torch.mm(self.nodevec1, self.nodevec2)), dim=1)
+                new_supports = self.supports + [adp]
+                # 保留
+                self.adj = adp
 
             # GLM算法获取邻接矩阵
-            if self.adjlearn == 'GLM':
+            elif self.adjlearn == 'GLM':
                 self.GLMadjs = self.GLM(input)
 
-            new_supports = self.supports + [adp]
-            # 保留
-            self.adj = adp
+            # elif self.adjlearn == 'weigthedOnly':
+            #     # nothing to done
+            #     pass
+
+
+
 
         # WaveNet layers
         for i in range(self.blocks * self.layers):

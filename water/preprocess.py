@@ -299,7 +299,7 @@ if __name__ == '__main__':
     # 步骤2：
     data_transpose('./temp/a.csv', './temp/b.csv')
     # 步骤3：
-    data_insert_time('./temp/b.csv', './temp/c.csv', '2019-10-01 00:00:00', '2021-09-30 23:00:00', '4H')
+    data_insert_time('./temp/b.csv', './temp/c.csv', '2019-10-01 00:00:00', '2021-09-30 23:00:00', '24H')
     # 步骤4
     data_clean('./temp/c.csv', './temp/d.csv',False,'linear')
     # 可视化

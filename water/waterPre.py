@@ -123,28 +123,52 @@ def generate_graph_seq2seq_io_data(
     # x: (epoch_size, input_length, num_nodes, input_dim)
     # y: (epoch_size, output_length, num_nodes, output_dim)
     """
-
     num_samples, num_nodes = df.shape
     data = np.expand_dims(df.values, axis=-1)
-    feature_list = [data]
-    if add_time_in_day:
-        time_ind = (df.index.values.astype("datetime64") - df.index.values.astype("datetime64[D]")) / np.timedelta64(1, "D")
-        time_in_day = np.tile(time_ind, [1, num_nodes, 1]).transpose((2, 1, 0))
-        feature_list.append(time_in_day)
-    if add_day_in_week:
-        dow = df.index.dayofweek
-        dow_tiled = np.tile(dow, [1, num_nodes, 1]).transpose((2, 1, 0))
-        feature_list.append(dow_tiled)
 
-    data = np.concatenate(feature_list, axis=-1)
+    xt = np.arange(0, len(x_offsets), 1) / len(x_offsets)
+    xt = np.expand_dims(xt, axis=-1)
+    xt = np.tile(xt, [1, num_nodes])
+    xt = np.expand_dims(xt, axis=-1)
+
+    yt = np.arange(0, len(y_offsets), 1) / len(y_offsets)
+    yt = np.expand_dims(yt, axis=-1)
+    yt = np.tile(yt, [1, num_nodes])
+    yt = np.expand_dims(yt, axis=-1)
+
     x, y = [], []
     min_t = abs(min(x_offsets))
     max_t = abs(num_samples - abs(max(y_offsets)))  # Exclusive
     for t in range(min_t, max_t):  # t is the index of the last observation.
-        x.append(data[t + x_offsets, ...])
-        y.append(data[t + y_offsets, ...])
+        one = np.concatenate([data[t + x_offsets, ...], xt], axis=-1)
+        x.append(one)
+        one = np.concatenate([data[t + y_offsets, ...], yt], axis=-1)
+        y.append(one)
+
     x = np.stack(x, axis=0)
     y = np.stack(y, axis=0)
+
+    # num_samples, num_nodes = df.shape
+    # data = np.expand_dims(df.values, axis=-1)
+    # feature_list = [data]
+    # if add_time_in_day:
+    #     time_ind = (df.index.values.astype("datetime64") - df.index.values.astype("datetime64[D]")) / np.timedelta64(1, "D")
+    #     time_in_day = np.tile(time_ind, [1, num_nodes, 1]).transpose((2, 1, 0))
+    #     feature_list.append(time_in_day)
+    # if add_day_in_week:
+    #     dow = df.index.dayofweek
+    #     dow_tiled = np.tile(dow, [1, num_nodes, 1]).transpose((2, 1, 0))
+    #     feature_list.append(dow_tiled)
+    #
+    # data = np.concatenate(feature_list, axis=-1)
+    # x, y = [], []
+    # min_t = abs(min(x_offsets))
+    # max_t = abs(num_samples - abs(max(y_offsets)))  # Exclusive
+    # for t in range(min_t, max_t):  # t is the index of the last observation.
+    #     x.append(data[t + x_offsets, ...])
+    #     y.append(data[t + y_offsets, ...])
+    # x = np.stack(x, axis=0)
+    # y = np.stack(y, axis=0)
     return x, y
 
 
@@ -414,6 +438,9 @@ def generate_data(input_csv, output_dir,site_num,factor_num,seq_length_x, seq_le
 
 
 if __name__ == "__main__":
+
+    place = 'changtai'
+
     # ######### 生成全站点多因子数据集！！
     # merge_all_factor('../data/water/shangban/water2020_linear_no_strange.csv', '../data/water/shangban/all/mergeAll.h5',
     #                  ids_shangban,[0,1,2,3,6,8])
@@ -423,14 +450,15 @@ if __name__ == "__main__":
     # ####### 单因子数据集
     # 上坂
     # for i in range(9):
-    #     file_name = merge_one_factor(ids_shangban ,'../data/water/shangban/water2020_linear_no_strange2.csv', i, '../data/water/shangban/singleFac')
-    #     generate_dataset(file_name,'../data/water/shangban/singleFac/'+str(i)+'/',24,3)
+    #     file_name = merge_one_factor(ids_shangban,'../data/water/shangban/water2020_day.csv',
+    #                                  i, '../data/water/shangban/daySingleFac')
+    #     generate_dataset(file_name, '../data/water/shangban/daySingleFac/'+str(i)+'/',24,3)
 
     # 长泰
-    for i in range(9):
-        file_name = merge_one_factor(ids_changtai ,'../data/water/changtai/water2020_linear_no_strange.csv',
-                                     i, '../data/water/changtai/singleFac')
-        generate_dataset(file_name,'../data/water/changtai/singleFac/'+str(i)+'/',24,3)
+    # for i in range(9):
+    #     file_name = merge_one_factor(ids_changtai ,'../data/water/changtai/water_24H.csv',
+    #                                  i, '../data/water/changtai/daySingleFac')
+    #     generate_dataset(file_name,'../data/water/changtai/daySingleFac/'+str(i)+'/',24,3)
 
     # #### 生成单站点单因子数据集
     # for site in range(len(ids_shangban)):
@@ -451,5 +479,5 @@ if __name__ == "__main__":
     #                       ids_shangban, [0, 1, 2, 3, 6, 8],
     #                       24, 3)
     #
-    # get_adj_file('../data/water/shangban', 10, 'adj_all_one.pkl')
+    get_adj_file(f'../data/water/{place}', 7, 'adj_all_one.pkl')
     pass
