@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 import sys
+from dtw import dtw
+import numpy as np
 
 
 class nconv(nn.Module):
@@ -33,20 +35,49 @@ class linear(nn.Module):
 
 
 class gcnWeight(nn.Module):
-    def __init__(self,c_in,c_out,dropout,support_len,order,num_nodes,device):
+    def __init__(self,c_in,c_out,dropout,support_len,order,num_nodes,device,gcn_site_type=True):
         super(gcnWeight,self).__init__()
         self.nconv = nconv()
         c_in = (order*support_len+1)*c_in
         self.mlp = linear(c_in,c_out)
         self.dropout = dropout
         self.order = order
+        self.gcn_site_type = gcn_site_type # 等于True表示这是用于站点内的因子融合，FALSE表示这是用于不同站点的因子融合
         self.weight = nn.Parameter(torch.randn(num_nodes, num_nodes).to(device), requires_grad=True).to(device)
+        ####
+        self.weight2 = nn.Parameter(torch.randn(num_nodes, num_nodes).to(device), requires_grad=True).to(device)
 
-    def forward(self,x,support):
+    def forward(self,x,support,dtw_matrix=None):
         out = [x]
-        for a in support:
-            wa = torch.mm(self.weight,a)
-            # wa = a * self.weight
+        wa = self.weight
+        if Config.adj_learn_type == 'weigthedDTW':
+            # 加上权重
+            # wa = torch.einsum('ncvl,vw->ncwl', (dtw_matrix, wa))
+            # 不加上权重
+            wa = dtw_matrix
+            wa = np.squeeze(wa)
+            x1 = torch.einsum('ncvl,nvw->ncwl',(x,wa))
+            out.append(x1)
+            for k in range(2, self.order + 1):
+                x2 = torch.einsum('ncvl,nvw->ncwl',(x1,wa))
+                out.append(x2)
+                x1 = x2
+
+            h = torch.cat(out, dim=1)
+            h = self.mlp(h)
+            h = F.dropout(h, self.dropout, training=self.training)
+
+        # elif Config.adj_learn_type == 'secondaryGraph':
+        #     wa = torch.mm(wa, support[0])
+        #     if self.gcn_site_type:
+        #         num_fac = Config.num_factors
+        #         for site in Config.num_nodes:
+        #             x[site * num_fac:site * num_fac + num_fac]
+
+
+        else:
+            for a in support:
+                wa = torch.mm(wa,a)
             x1 = self.nconv(x,wa)
             out.append(x1)
             for k in range(2, self.order + 1):
@@ -54,9 +85,9 @@ class gcnWeight(nn.Module):
                 out.append(x2)
                 x1 = x2
 
-        h = torch.cat(out,dim=1)
-        h = self.mlp(h)
-        h = F.dropout(h, self.dropout, training=self.training)
+            h = torch.cat(out,dim=1)
+            h = self.mlp(h)
+            h = F.dropout(h, self.dropout, training=self.training)
         return h
 
 
@@ -125,17 +156,29 @@ class GLM(nn.Module):
         self.start_conv = nn.Conv2d(in_channels=in_dim,
                                     out_channels=self.hidden,
                                     kernel_size=(1,1))
+        self.convs = nn.ModuleList()
+
+        for i in range(6):
+            self.convs.append(nn.Conv2d(in_channels=self.hidden,out_channels=self.hidden,kernel_size=(1,2),dilation=(1,1)))
+            self.convs.append(nn.Conv2d(in_channels=self.hidden,out_channels=self.hidden,kernel_size=(1,2),dilation=(1,3)))
+        self.end_mlp = nn.Linear(self.hidden,self.num_node)
+        # self.conv1 =
+        # self.conv2 = nn.Conv2d(in_channels=self.hidden,out_channels=self.hidden,kernel_size=(1,2),dilation=(1,3))
+
         self.mlp1 = nn.Linear(input_length,1)
         self.mlp2 = nn.Linear(self.hidden,64)
         self.mlp3 = nn.Linear(64,self.num_node)
 
-        self.mlp4 = nn.Linear(self.in_dim * self.input_length,256)
-        self.mlp5 = nn.Linear(256,64)
-        # self.mlp6 = nn.Linear(128,64)
-        # self.mlp7 = nn.Linear(64,32)
-        self.mlp8 = nn.Linear(64,self.num_node)
-
     def forward(self, input):
+        input = nn.functional.pad(input, (1, 0))
+        x = self.start_conv(input)
+
+        for i in range(12):
+            x = self.convs[i](x)
+        x = x.squeeze(dim=3)
+        x = x.transpose(1, 2)
+        x = self.end_mlp(x)
+        x = F.relu(x)
 
         # x = F.relu(self.start_conv(input))
         # x = F.relu(self.mlp1(x))
@@ -145,21 +188,13 @@ class GLM(nn.Module):
         # x = F.relu(self.mlp3(x))
 
 
-        x = input.reshape(input.shape[0],self.num_node,-1)
-        x = F.relu(self.mlp4(x))
-        x = F.relu(self.mlp5(x))
-        # x = F.relu(self.mlp6(x))
-        # x = F.relu(self.mlp7(x))
-        x = F.relu(self.mlp8(x))
-
-
         x = F.dropout(x, 0.3, training=self.training)
 
         return x
 
-
+import water.config as Config
 class gwnet(nn.Module):
-    def __init__(self, adjlearn,device, num_nodes, dropout=0.3, supports=None, gcn_bool=True, addaptadj=True,
+    def __init__(self,device, num_nodes, dropout=0.3, supports=None, gcn_bool=True, addaptadj=True,
                  aptinit=None, in_dim=2,out_dim=12,residual_channels=32,dilation_channels=32,
                  skip_channels=256,end_channels=512,kernel_size=2,blocks=6,layers=2):
         super(gwnet, self).__init__()
@@ -169,7 +204,8 @@ class gwnet(nn.Module):
         self.gcn_bool = gcn_bool
         self.addaptadj = addaptadj
         self.device = device
-        self.adjlearn = adjlearn
+
+        self.adjlearn = Config.adj_learn_type
 
         self.filter_convs = nn.ModuleList()
         self.gate_convs = nn.ModuleList()
@@ -217,7 +253,13 @@ class gwnet(nn.Module):
 
                 self.nodevec1 = nn.Parameter(torch.randn(num_nodes, vec_length).to(device), requires_grad=True).to(device)
                 self.nodevec2 = nn.Parameter(torch.randn(vec_length, num_nodes).to(device), requires_grad=True).to(device)
+                self.adjembd = nn.Parameter(torch.randn(num_nodes, num_nodes), requires_grad=True).to(device)
                 self.supports_len +=1
+
+                self.nodevec3 = nn.Parameter(torch.randn(num_nodes, vec_length).to(device), requires_grad=True).to(
+                    device)
+                self.nodevec4 = nn.Parameter(torch.randn(vec_length, num_nodes).to(device), requires_grad=True).to(
+                    device)
             else:
                 m, p, n = torch.svd(aptinit)
                 initemb1 = torch.mm(m[:, :10], torch.diag(p[:10] ** 0.5))
@@ -257,10 +299,17 @@ class gwnet(nn.Module):
 
                         self.gconv.append(gcnGLM(dilation_channels,residual_channels,dropout,
                                           support_len=self.supports_len,order=3,num_nodes=num_nodes,device=device))
-                    elif self.adjlearn == 'weigthed' or self.adjlearn == 'weigthedOnly':
+                    elif self.adjlearn == 'weigthed' or self.adjlearn == 'weigthedOnly' \
+                            or self.adjlearn == 'merge3' or self.adjlearn == 'weigthedDTW':
                         self.gconv.append(gcnWeight(dilation_channels, residual_channels, dropout,
                                                     support_len=self.supports_len, order=3, num_nodes=num_nodes,
                                                     device=device))
+                    elif self.adjlearn == 'secondaryGraph':
+                        gcn_site_type = True
+                        self.gconv.append(gcnWeight(dilation_channels, residual_channels, dropout,
+                                                    support_len=self.supports_len, order=3, num_nodes=num_nodes,
+                                                    device=device,gcn_site_type=gcn_site_type))
+                        gcn_site_type = not gcn_site_type
                     else:
                         self.gconv.append(gcn(dilation_channels, residual_channels, dropout,
                                               support_len=self.supports_len, order=3, num_nodes=num_nodes,
@@ -279,8 +328,25 @@ class gwnet(nn.Module):
 
         self.receptive_field = receptive_field
 
+    def compute_dtw(self, x):
+        x = x[:, 0:-1, :, :]
+        manhattan_distance = lambda x, y: np.abs(x - y)
+        dist = np.zeros([x.shape[0], x.shape[1], x.shape[2], x.shape[2]])
+        for a in range(x.shape[0]):
+            for b in range(x.shape[1]):
+                for c in range(x.shape[2]):
+                    for d in range(x.shape[2]):
+                        seq_x = x[a, b, c, :]
+                        seq_y = x[a, b, d, :]
+                        r = dtw(seq_x, seq_y, dist=manhattan_distance)
+                        dist[a, b, c, d] = 1.0 / (r[0] + 0.1)
+        return dist
+
     def forward(self, input):
         input_numpy = input.to('cpu').numpy()
+        if self.adjlearn == 'weigthedDTW':
+            dtw_matrix = self.compute_dtw(input_numpy)
+            dtw_matrix = torch.Tensor(dtw_matrix).to(self.device)
         in_len = input.size(3)
         if in_len<self.receptive_field:
             x = nn.functional.pad(input,(self.receptive_field-in_len,0,0,0))
@@ -292,17 +358,23 @@ class gwnet(nn.Module):
         # calculate the current adaptive adj matrix once per iteration
         new_supports = None
         if self.gcn_bool and self.addaptadj and self.supports is not None:
-            # 对称阵算法
-            # m1 = torch.tanh(0.25 * self.nodevec1)
-            # m2 = torch.tanh(0.25 * self.nodevec2)
-            # adp = F.relu(torch.tanh(torch.mm(m1, m2.t()) - torch.mm(m2, m1.t())))
-            # adp = F.softmax(F.relu(torch.tanh(torch.mm(m1, m2.t()) - torch.mm(m2, m1.t()))), dim=1)
+
             # adp = torch.triu(adp)
-            if self.adjlearn == 'weigthed' or self.adjlearn == 'embed':
+            if self.adjlearn == 'weigthed' or self.adjlearn == 'embed' or self.adjlearn == 'merge3':
                 adp = F.softmax(F.relu(torch.mm(self.nodevec1, self.nodevec2)), dim=1)
+                # adp = torch.mm(self.nodevec1, self.nodevec2)
+                # adp = F.softmax(F.relu(adp),dim=1)
                 new_supports = self.supports + [adp]
                 # 保留
                 self.adj = adp
+
+            if self.adjlearn == 'merge3':
+                # 对称阵算法
+                m1 = torch.tanh(0.25 * self.nodevec3)
+                m2 = torch.tanh(0.25 * self.nodevec4)
+                # adp = F.relu(torch.tanh(torch.mm(m1, m2.t()) - torch.mm(m2, m1.t())))
+                adp = F.softmax(F.relu(torch.tanh(torch.mm(m1, m2.t()) - torch.mm(m2, m1.t()))), dim=1)
+                new_supports = new_supports + [adp]
 
             # GLM算法获取邻接矩阵
             elif self.adjlearn == 'GLM':
@@ -352,6 +424,8 @@ class gwnet(nn.Module):
             if self.gcn_bool and self.supports is not None:
                 if self.adjlearn == 'GLM':
                     x = self.gconv[i](x, self.GLMadjs)
+                elif self.adjlearn == 'weigthedDTW':
+                    x = self.gconv[i](x, new_supports,dtw_matrix)
                 elif self.addaptadj:
                     x = self.gconv[i](x, new_supports)
                 else:

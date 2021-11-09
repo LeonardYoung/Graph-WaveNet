@@ -10,7 +10,7 @@ from utils import earlystopping
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--device',type=str,default='cuda:1',help='')
-parser.add_argument('--adjlearn',type=str,default='GLM',help='adj learn algorithm')
+# parser.add_argument('--adjlearn',type=str,default='GLM',help='adj learn algorithm')
 parser.add_argument('--data',type=str,default='data/METR-LA',help='data path')
 parser.add_argument('--adjdata',type=str,default='data/sensor_graph/adj_mx.pkl',help='adj data path')
 parser.add_argument('--adjtype',type=str,default='doubletransition',help='adj type')
@@ -31,7 +31,7 @@ parser.add_argument('--print_every',type=int,default=50,help='')
 #parser.add_argument('--seed',type=int,default=99,help='random seed')
 parser.add_argument('--save',type=str,default='./garage/metr',help='save path')
 parser.add_argument('--expid',type=int,default=1,help='experiment id')
-
+import water.config as Config
 
 args = parser.parse_args()
 
@@ -77,7 +77,7 @@ def test(engine,dataloader,model_path):
     print("Training finished")
     # print("The valid loss on best model is", str(round(his_loss[bestid], 4)))
 
-    if args.gcn_bool and engine.model.adj is not None:
+    if args.gcn_bool and engine.model.adj is not None and False:
         adj = engine.model.adj.to('cpu').numpy()
 
         adj_min = np.min(adj)
@@ -131,10 +131,11 @@ def run_once():
     supports = [torch.tensor(i).to(device).to(torch.float32) for i in adj_mx]
     # supports = [adj_mx[-1]]
 
-    print(args)
+    # print(args)
     print(f'gcn_bool={args.gcn_bool}')
-    print(f'adj_learn={args.adjlearn}')
+    # print(f'adj_learn={args.adjlearn}')
     print(f'data={args.data}')
+    Config.print_all()
 
     if args.randomadj:
         adjinit = None
@@ -149,7 +150,7 @@ def run_once():
     model_save_path = "./data/save_models/singFactor/waveNet.pth"
     early_stopping = earlystopping.EarlyStopping(patience=40, path=model_save_path, verbose=True)
 
-    engine = trainer(args.adjlearn, scaler, args.in_dim, args.seq_length, args.num_nodes, args.nhid, args.dropout,
+    engine = trainer( scaler, args.in_dim, args.seq_length, args.num_nodes, args.nhid, args.dropout,
                          args.learning_rate, args.weight_decay, device, supports, args.gcn_bool, args.addaptadj,
                          adjinit)
 
@@ -168,9 +169,9 @@ def run_once():
     return test(engine,dataloader,model_save_path)
 
 
-if __name__ == "__main__":
 
-    place = 'changtai'
+if __name__ == "__main__":
+    place = Config.place
 
     args.aptonly = True
     args.addaptadj = True
@@ -178,43 +179,34 @@ if __name__ == "__main__":
     args.adjtype = 'doubletransition'
     # 输出维度
     args.seq_length = 3
-    args.device = 'cuda:1'
-    # args.adjlearn = 'embed'
-    args.adjlearn = 'weigthed'
-    # args.adjlearn = 'weigthedOnly'
-    # args.adjlearn = 'GLM'
-    # args.device = 'cpu'
+    args.device = 'cuda:0'
+    args.num_nodes = Config.num_nodes # 图节点数
 
-    if args.adjlearn == 'weigthedOnly':
+    # args.device = 'cpu'
+    args.gcn_bool = Config.gcn_bool
+
+    if Config.adj_learn_type == 'weigthedOnly':
         args.aptonly = False
         args.addaptadj = False
 
 
-    # # ######  单因子全站点实验参数
-    args.gcn_bool = False
-    args.epochs = 300
-    args.data = f'data/water/{place}/daySingleFac/0'
-    args.adjdata = f'data/water/{place}/adjs/adj_all_one.pkl'
+    # ######  单因子全站点实验参数
+    # args.epochs = 300
+    # args.data = f'data/water/{place}/singleFac/0'
+    # args.adjdata = f'data/water/{place}/adjs/adj_all_one.pkl'
+    # # 输入维度（包括时间维度）
+    # args.in_dim = 2
+
+    # # ######  多因子实验参数（每个因子是一个站点）
+    args.epochs = 1000
+    args.data = 'data/water/shangban/multiFac'
+    args.adjdata = 'data/water/shangban/adjs/adj_60_8eye_one.pkl'
     # 输入维度（包括时间维度）
     args.in_dim = 2
     # 图节点数
-    if place == 'changtai':
-        args.num_nodes = 7
-    elif place == 'changban':
-        args.num_nodes = 10
-
-    # ######  多因子实验参数（每个因子是一个站点）
-    # args.gcn_bool = True
-    # args.epochs = 200
-    # args.data = 'data/water/shangban/multiFac'
-    # args.adjdata = 'data/water/shangban/adjs/adj_60_8eye_one.pkl'
-    # # 输入维度（包括时间维度）
-    # args.in_dim = 2
-    # # 图节点数
-    # args.num_nodes = 60
+    args.num_nodes = 60
 
     ######  全因子多站点实验参数
-    # args.gcn_bool = False
     # args.epochs = 200
     # args.data = 'data/water/shangban/all'
     # args.adjdata = 'data/water/shangban/adjs/adj_shangban2.pkl'
@@ -224,11 +216,11 @@ if __name__ == "__main__":
     # args.num_nodes = 10
 
     # ############跑1次
-    # t1 = time.time()
-    # run_once()
-    # t2 = time.time()
-    # print("Total time spent: {:.4f}".format(t2 - t1))
-    #
+    t1 = time.time()
+    run_once()
+    t2 = time.time()
+    print("Total time spent: {:.4f}".format(t2 - t1))
+
 
     # ############跑5次
     # t1 = time.time()
@@ -244,29 +236,29 @@ if __name__ == "__main__":
 
 
     # ########### 自动进行单因子实验
-    t1 = time.time()
-    args.epochs = 300
-    result_log = ""
-    args.gcn_bool = False
-
-    factor_index = [0, 1, 2, 3, 6, 8]
-
-    for fac in factor_index:
-        args.data = f'data/water/{place}/singleFac/' + str(fac)
-
-        m_mae_list = []
-        for i in range(5):
-            print("data::{},running {} st".format(args.data,i+1))
-            mae = run_once()
-            print(mae)
-            m_mae_list.append(mae[0])
-        m_mae = np.mean(m_mae_list)
-        print(m_mae_list)
-        result_log += "data=={},MAE={:.4f}\n".format(args.data, m_mae)
-
-
-    print('------------------finished-----------------------')
-    t2 = time.time()
-    print(result_log)
-    print("Total time spent: {:.4f}".format(t2 - t1))
+    # t1 = time.time()
+    # args.epochs = 300
+    # result_log = ""
+    #
+    #
+    # factor_index = [0, 1, 2, 3, 6, 8]
+    #
+    # for fac in factor_index:
+    #     args.data = f'data/water/{place}/daySingleFac/' + str(fac)
+    #
+    #     m_mae_list = []
+    #     for i in range(5):
+    #         print("data::{},running {} st".format(args.data,i+1))
+    #         mae = run_once()
+    #         print(mae)
+    #         m_mae_list.append(mae[0])
+    #     m_mae = np.mean(m_mae_list)
+    #     print(m_mae_list)
+    #     result_log += "data=={},MAE={:.4f}\n".format(args.data, m_mae)
+    #
+    #
+    # print('------------------finished-----------------------')
+    # t2 = time.time()
+    # print(result_log)
+    # print("Total time spent: {:.4f}".format(t2 - t1))
 
