@@ -1,11 +1,13 @@
 
+# place = 'changtai'
 place = 'shangban'
-
+batch_size = 64
+device = 'cuda:0'
 gcn_bool = True
 # adj_learn_type = 'embed'            # 节点嵌入算法
 # adj_learn_type = 'weigthedOnly'   # 只有权重矩阵
-# adj_learn_type = 'weigthed'       # 节点嵌入 + 权重矩阵
-adj_learn_type = 'secondaryGraph'       # 子图，先用图处理同站点间的多维因子融合，再处理不同站点间同因子融合
+adj_learn_type = 'weigthed'       # 节点嵌入 + 权重矩阵
+# adj_learn_type = 'secondaryGraph'       # 子图，先用图处理同站点间的多维因子融合，再处理不同站点间同因子融合
 # adj_learn_type = 'weigthedDTW'       # DTW + 权重矩阵
 # adj_learn_type = 'merge3'       # 节点嵌入 + 权重矩阵 + 对称阵
 # adj_learn_type = 'GLM'            # GLM

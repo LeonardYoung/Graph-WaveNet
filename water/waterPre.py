@@ -466,24 +466,24 @@ if __name__ == "__main__":
 
     # ####### 生成多因子数据集（每个因子是一个节点）
     # 上坂
-    generate_multi_factor('../data/water/shangban/water_24H.csv','../data/water/shangban/multiFacDay',
-                          ids_shangban,[0,1,2,3,6,8],
-                          24,3)
+    # generate_multi_factor('../data/water/shangban/water_24H.csv','../data/water/shangban/multiFacDay',
+    #                       ids_shangban,[0,1,2,3,6,8],
+    #                       24,3)
 
     # get_adj_file('../data/water/shangban', 60,'adj_60_8eye_one.pkl')
 
     # 长泰
-    # generate_multi_factor('../data/water/changtai/water_linear.csv', '../data/water/changtai/multiFac',
-    #                       ids_shangban, [0, 1, 2, 3, 6, 8],
+    # generate_multi_factor('../data/water/changtai/water_4H.csv', '../data/water/changtai/multiFac',
+    #                       ids_changtai, [0, 1, 2, 3, 6, 8],
     #                       24, 3)
-    #
+
     # get_adj_file(f'../data/water/{place}', 7, 'adj_all_one.pkl')
 
 
-    # # ######## 生成全站点多因子数据集！！
-    # merge_all_factor(f'../data/water/{place}/water_4H.csv', f'../data/water/{place}/all/mergeAll.h5',
-    #                  ids_shangban,[0,1,2,3,6,8])
-    # generate_data(f'../data/water/{place}/all/mergeAll.h5', f'../data/water/{place}/all',
-    #               site_num = 10,factor_num=6,seq_length_x=24, seq_length_y=3)
+    # ######## 生成全站点多因子数据集！！（多维变量）
+    merge_all_factor(f'../data/water/{place}/water_24H.csv', f'../data/water/{place}/allDay/mergeAll.h5',
+                     ids_shangban,[0,1,2,3,6,8])
+    generate_data(f'../data/water/{place}/allDay/mergeAll.h5', f'../data/water/{place}/allDay',
+                  site_num = 10,factor_num=6,seq_length_x=24, seq_length_y=3)
 
     pass

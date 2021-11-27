@@ -179,7 +179,7 @@ if __name__ == "__main__":
     args.adjtype = 'doubletransition'
     # 输出维度
     args.seq_length = 3
-    args.device = 'cuda:0'
+    args.device = Config.device
     args.num_nodes = Config.num_nodes # 图节点数
 
     # args.device = 'cpu'
@@ -191,29 +191,28 @@ if __name__ == "__main__":
 
 
     # ######  单因子全站点实验参数
-    # args.epochs = 300
-    # args.data = f'data/water/{place}/singleFac/0'
+    args.epochs = 300
+    args.data = f'data/water/{place}/singleFac/0'
+    args.adjdata = f'data/water/{place}/adjs/adj_all_one.pkl'
+    # 输入维度（包括时间维度）
+    args.in_dim = 2
+
+    # # ######  多因子实验参数（每个因子是一个站点）
+    # args.epochs = 1000
+    # args.data = f'data/water/{place}/multiFac'
     # args.adjdata = f'data/water/{place}/adjs/adj_all_one.pkl'
     # # 输入维度（包括时间维度）
     # args.in_dim = 2
-
-    # # ######  多因子实验参数（每个因子是一个站点）
-    args.epochs = 1000
-    args.data = 'data/water/shangban/multiFac'
-    args.adjdata = 'data/water/shangban/adjs/adj_60_8eye_one.pkl'
-    # 输入维度（包括时间维度）
-    args.in_dim = 2
-    # 图节点数
-    args.num_nodes = 60
+    # # 图节点数
+    # args.num_nodes = 42
 
     ######  全因子多站点实验参数
-    # args.epochs = 200
-    # args.data = 'data/water/shangban/all'
-    # args.adjdata = 'data/water/shangban/adjs/adj_shangban2.pkl'
+    # args.epochs = 1000
+    # args.data = f'data/water/{place}/all'
+    # args.adjdata = f'data/water/{place}/adjs/adj_all_one.pkl'
     # # 输入维度（包括时间维度）
     # args.in_dim = 7
-    # # 图节点数
-    # args.num_nodes = 10
+
 
     # ############跑1次
     t1 = time.time()
@@ -230,10 +229,10 @@ if __name__ == "__main__":
     #     mae = run_once()
     #     print(mae)
     #     mae_list.append(mae[0])
-    # print("MAE={}".format(np.mean(mae_list)))
+    # print("TOTAL MEAN MAE={}".format(np.mean(mae_list)))
     # t2 = time.time()
     # print("Total time spent: {:.4f}".format(t2 - t1))
-
+    #
 
     # ########### 自动进行单因子实验
     # t1 = time.time()

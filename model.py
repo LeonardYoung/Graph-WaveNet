@@ -162,35 +162,56 @@ class GLM(nn.Module):
             self.convs.append(nn.Conv2d(in_channels=self.hidden,out_channels=self.hidden,kernel_size=(1,2),dilation=(1,1)))
             self.convs.append(nn.Conv2d(in_channels=self.hidden,out_channels=self.hidden,kernel_size=(1,2),dilation=(1,3)))
         self.end_mlp = nn.Linear(self.hidden,self.num_node)
-        # self.conv1 =
-        # self.conv2 = nn.Conv2d(in_channels=self.hidden,out_channels=self.hidden,kernel_size=(1,2),dilation=(1,3))
 
+        # 构造全图
+        # self.mlp1 = nn.Linear(input_length,1)
+        # self.mlp2 = nn.Linear(self.hidden,64)
+        # self.mlp3 = nn.Linear(64,self.num_node)
+
+        # 只构造次对角线
         self.mlp1 = nn.Linear(input_length,1)
-        self.mlp2 = nn.Linear(self.hidden,64)
-        self.mlp3 = nn.Linear(64,self.num_node)
+        self.mlp2 = nn.Linear(self.num_node,1)
+        self.mlp3 = nn.Linear(self.hidden,self.num_node -1)
 
     def forward(self, input):
-        input = nn.functional.pad(input, (1, 0))
-        x = self.start_conv(input)
+        # input = nn.functional.pad(input, (1, 0))
+        # x = self.start_conv(input)
+        # for i in range(12):
+        #     x = self.convs[i](x)
+        # x = x.squeeze(dim=3)
+        # x = x.transpose(1, 2)
+        # x = self.end_mlp(x)
+        # x = F.relu(x)
 
-        for i in range(12):
-            x = self.convs[i](x)
-        x = x.squeeze(dim=3)
-        x = x.transpose(1, 2)
-        x = self.end_mlp(x)
-        x = F.relu(x)
-
+        # mlp构造全图
         # x = F.relu(self.start_conv(input))
         # x = F.relu(self.mlp1(x))
         # x = x.squeeze(dim=3)
         # x = x.transpose(1,2)
         # x = F.relu(self.mlp2(x))
         # x = F.relu(self.mlp3(x))
+        # x = F.dropout(x, 0.3, training=self.training)
 
-
+        # mlp构造次对角线
+        x = F.relu(self.start_conv(input))
+        x = F.relu(self.mlp1(x))
+        x = x.squeeze(dim=3)
+        # x = x.transpose(1, 2)
+        x = F.relu(self.mlp2(x))
+        x = x.squeeze(dim=2)
+        x = F.relu(self.mlp3(x))
         x = F.dropout(x, 0.3, training=self.training)
 
-        return x
+        # 生成矩阵
+        batch_size = Config.batch_size
+        device = Config.device
+        x_matrix = torch.zeros([batch_size,self.num_node,self.num_node]).to(device)
+        for i in range(self.num_node - 1):
+            x_matrix[:,i,i+1] = x[:,i]
+        adj = torch.zeros([batch_size,self.num_node,self.num_node],requires_grad=True).to(device)
+        adj = adj + x_matrix
+
+        return adj
 
 import water.config as Config
 class gwnet(nn.Module):
