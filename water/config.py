@@ -11,9 +11,11 @@ adj_learn_type = 'weigthed'       # 节点嵌入 + 权重矩阵
 # adj_learn_type = 'weigthedDTW'       # DTW + 权重矩阵
 # adj_learn_type = 'merge3'       # 节点嵌入 + 权重矩阵 + 对称阵
 # adj_learn_type = 'GLM'            # GLM
+# adj_learn_type = 'gcnOfficial'       # 节点嵌入 + 权重矩阵
 
 num_factors = 6     # 因子数量
 num_nodes = 10
+input_data_len = 24 # 输入数据的特征长度
 if place == 'changtai':
     num_nodes = 7
 elif place == 'changban':

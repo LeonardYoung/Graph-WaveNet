@@ -258,39 +258,39 @@ if __name__ == '__main__':
     train_epoch = 150
 
     # ###################### 单因子
-    # early_stopping = earlystopping.EarlyStopping(patience=30, path=model_save_path, verbose=True)
-    # res = run_once('data/water/shangban',2, 6, early_stopping,model_save_path, input_size,predict_size,train_epoch,True)
-    # print("test MAE = {},MAPE={}".format(res[0],res[1]))
+    early_stopping = earlystopping.EarlyStopping(patience=30, path=model_save_path, verbose=True)
+    res = run_once('data/water/shangban/singlesingle',0, 0, early_stopping,model_save_path, input_size,predict_size,train_epoch,True)
+    print("test MAE = {},MAPE={}".format(res[0],res[1]))
     # ####################### 全站点 全因子实验
-    t1 = time.time()
-    all_factor_result = []
-    for factor in range(9):
-        site_result = []
-        for site in range(10):
-            early_stopping = earlystopping.EarlyStopping(patience=30, path=model_save_path, verbose=True)
-            res = run_once('data/water/shangban/daysinglesingle', site, factor,early_stopping,
-                           model_save_path,input_size,predict_size,train_epoch,True)
-            site_result.append(res)
-        all_factor_result.append(site_result)
-
-    t2 = time.time()
-
-    # 打印结果
-    print("-------------------MAE-------------------------------")
-    for factor in range(len(all_factor_result)):
-        line = "{},".format(factors[factor])
-        for site in range(len(all_factor_result[factor])):
-            # print(all_factor_result[factor][site])
-            line += "{:.4f},".format(all_factor_result[factor][site][0])
-        # factor_mean = np.mean(all_factor_result[factor][:][0])
-        # print(line + "{:.4f}".format(factor_mean))
-        # print(all_factor_result[factor][:][0])
-        print(line)
-    # print("Total time spent: {:.4f}".format(t2 - t1))
-    print("--------------------MAPE------------------------------")
-    for factor in range(len(all_factor_result)):
-        line = "{},".format(factors[factor])
-        for site in range(len(all_factor_result[factor])):
-            line += "{:.4f},".format(all_factor_result[factor][site][1])
-        print(line)
+    # t1 = time.time()
+    # all_factor_result = []
+    # for factor in range(9):
+    #     site_result = []
+    #     for site in range(10):
+    #         early_stopping = earlystopping.EarlyStopping(patience=30, path=model_save_path, verbose=True)
+    #         res = run_once('data/water/shangban/daysinglesingle', site, factor,early_stopping,
+    #                        model_save_path,input_size,predict_size,train_epoch,True)
+    #         site_result.append(res)
+    #     all_factor_result.append(site_result)
+    #
+    # t2 = time.time()
+    #
+    # # 打印结果
+    # print("-------------------MAE-------------------------------")
+    # for factor in range(len(all_factor_result)):
+    #     line = "{},".format(factors[factor])
+    #     for site in range(len(all_factor_result[factor])):
+    #         # print(all_factor_result[factor][site])
+    #         line += "{:.4f},".format(all_factor_result[factor][site][0])
+    #     # factor_mean = np.mean(all_factor_result[factor][:][0])
+    #     # print(line + "{:.4f}".format(factor_mean))
+    #     # print(all_factor_result[factor][:][0])
+    #     print(line)
+    # # print("Total time spent: {:.4f}".format(t2 - t1))
+    # print("--------------------MAPE------------------------------")
+    # for factor in range(len(all_factor_result)):
+    #     line = "{},".format(factors[factor])
+    #     for site in range(len(all_factor_result[factor])):
+    #         line += "{:.4f},".format(all_factor_result[factor][site][1])
+    #     print(line)
     #########################

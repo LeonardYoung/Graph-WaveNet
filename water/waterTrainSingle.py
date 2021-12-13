@@ -229,10 +229,11 @@ if __name__ == "__main__":
     #     mae = run_once()
     #     print(mae)
     #     mae_list.append(mae[0])
+    # print(mae_list)
     # print("TOTAL MEAN MAE={}".format(np.mean(mae_list)))
     # t2 = time.time()
     # print("Total time spent: {:.4f}".format(t2 - t1))
-    #
+
 
     # ########### 自动进行单因子实验
     # t1 = time.time()
@@ -243,7 +244,7 @@ if __name__ == "__main__":
     # factor_index = [0, 1, 2, 3, 6, 8]
     #
     # for fac in factor_index:
-    #     args.data = f'data/water/{place}/daySingleFac/' + str(fac)
+    #     args.data = f'data/water/{place}/singleFac/' + str(fac)
     #
     #     m_mae_list = []
     #     for i in range(5):
@@ -254,6 +255,7 @@ if __name__ == "__main__":
     #     m_mae = np.mean(m_mae_list)
     #     print(m_mae_list)
     #     result_log += "data=={},MAE={:.4f}\n".format(args.data, m_mae)
+    #     print(result_log)
     #
     #
     # print('------------------finished-----------------------')

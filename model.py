@@ -5,6 +5,9 @@ from torch.autograd import Variable
 import sys
 from dtw import dtw
 import numpy as np
+import math
+from torch.nn.parameter import Parameter
+from torch.nn.modules.module import Module
 
 
 class nconv(nn.Module):
@@ -76,6 +79,7 @@ class gcnWeight(nn.Module):
 
 
         else:
+            # wa = torch.sigmoid(wa)      # 遗忘
             for a in support:
                 wa = torch.mm(wa,a)
             x1 = self.nconv(x,wa)
@@ -89,6 +93,58 @@ class gcnWeight(nn.Module):
             h = self.mlp(h)
             h = F.dropout(h, self.dropout, training=self.training)
         return h
+
+
+
+class GraphConvolution(Module):
+    """
+    Simple GCN layer, similar to https://arxiv.org/abs/1609.02907
+    """
+
+    def __init__(self, in_features, out_features, bias=True,num_nodes=10):
+        super(GraphConvolution, self).__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        device = Config.device
+        self.weightLeft = nn.Parameter(torch.randn(num_nodes, num_nodes).to(device), requires_grad=True).to(device)
+        self.weight = nn.Parameter(torch.randn(in_features, out_features).to(device), requires_grad=True).to(device)
+        # self.weight = Parameter(torch.FloatTensor(in_features, out_features))
+        if bias:
+            self.bias = Parameter(torch.FloatTensor(out_features))
+        else:
+            self.register_parameter('bias', None)
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        stdv = 1. / math.sqrt(self.weight.size(1))
+        self.weight.data.uniform_(-stdv, stdv)
+        if self.bias is not None:
+            self.bias.data.uniform_(-stdv, stdv)
+
+    def forward(self, input, adj):
+        # # AXW
+        # support = torch.einsum('ncvl,lo->ncvo', (input, self.weight))
+        # output  = torch.einsum('wv,ncvl->ncwl', (adj[0],support))
+
+        # # WAXW
+        # adj = torch.mm(self.weightLeft, adj[0])
+        # support = torch.einsum('ncvl,lo->ncvo', (input, self.weight))
+        # output = torch.einsum('wv,ncvl->ncwl', (adj[0], support))
+
+        # WAX
+        adj = torch.mm(self.weightLeft, adj[0])
+        output = torch.einsum('wv,ncvl->ncwl', (adj, input))
+
+        if self.bias is not None:
+            return output + self.bias
+        else:
+            return output
+
+    def __repr__(self):
+        return self.__class__.__name__ + ' (' \
+               + str(self.in_features) + ' -> ' \
+               + str(self.out_features) + ')'
+
 
 
 class gcn(nn.Module):
@@ -254,8 +310,8 @@ class gwnet(nn.Module):
         self.supports = supports
         self.adj = None
 
-
-
+        input_data_len = Config.input_data_len
+        input_feature = input_data_len
         receptive_field = 1
 
         self.supports_len = 0
@@ -331,6 +387,9 @@ class gwnet(nn.Module):
                                                     support_len=self.supports_len, order=3, num_nodes=num_nodes,
                                                     device=device,gcn_site_type=gcn_site_type))
                         gcn_site_type = not gcn_site_type
+                    elif self.adjlearn == 'gcnOfficial':
+                        self.gconv.append(GraphConvolution( input_feature,input_feature,False))
+                        input_feature = input_feature - (2-i)
                     else:
                         self.gconv.append(gcn(dilation_channels, residual_channels, dropout,
                                               support_len=self.supports_len, order=3, num_nodes=num_nodes,
@@ -381,7 +440,8 @@ class gwnet(nn.Module):
         if self.gcn_bool and self.addaptadj and self.supports is not None:
 
             # adp = torch.triu(adp)
-            if self.adjlearn == 'weigthed' or self.adjlearn == 'embed' or self.adjlearn == 'merge3':
+            if self.adjlearn == 'weigthed' or self.adjlearn == 'embed' or self.adjlearn == 'merge3' \
+                    or self.adjlearn == 'gcnOfficial':
                 adp = F.softmax(F.relu(torch.mm(self.nodevec1, self.nodevec2)), dim=1)
                 # adp = torch.mm(self.nodevec1, self.nodevec2)
                 # adp = F.softmax(F.relu(adp),dim=1)
@@ -448,6 +508,8 @@ class gwnet(nn.Module):
                 elif self.adjlearn == 'weigthedDTW':
                     x = self.gconv[i](x, new_supports,dtw_matrix)
                 elif self.addaptadj:
+                    # gcnOfficial只跑一次
+                    # if self.adjlearn != 'gcnOfficial' or i == 0:
                     x = self.gconv[i](x, new_supports)
                 else:
                     x = self.gconv[i](x,self.supports)

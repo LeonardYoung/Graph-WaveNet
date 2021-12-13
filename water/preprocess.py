@@ -100,6 +100,13 @@ def data_insert_time(file_in, file_out,start,end,freq):
 
 # 利用四分位间距检测异常值
 def strange_data(df,col):
+
+    if col == 'pH值':
+        range_left = 6
+        range_right = 8
+        out_df = df[(df[col] < range_left) | (df[col] > range_right)]
+        print('{}超标点个数为：{}'.format(col,len(out_df)))
+
     if col == '电导率':
         data_bottom,data_top = 125,750
     else:
@@ -287,23 +294,23 @@ if __name__ == '__main__':
     # # 步骤3：
     # data_insert_time('./temp/2.csv','./temp/3.csv','2020-01-01 00:00:00', '2020-10-31 23:00:00','4H')
     # # 步骤4
-    # data_clean('./temp/3.csv', './temp/4.csv',False,'linear')
-    # # 可视化
+    data_clean('./temp/3.csv', './temp/4.csv',False,'linear')
+    # 可视化
     # conver_to_seq_csv('./temp/4.csv', './temp/5.csv')
 
-    # ######### 长泰
-    # 步骤1：
-    root = r"E:\project\mvp\Graph-WaveNet\data\water\changtai\origin"
-    data_fix_concat(root, 'csv', './temp/a.csv')
-
-    # 步骤2：
-    data_transpose('./temp/a.csv', './temp/b.csv')
-    # 步骤3：
-    data_insert_time('./temp/b.csv', './temp/c.csv', '2019-10-01 00:00:00', '2021-09-30 23:00:00', '24H')
-    # 步骤4
-    data_clean('./temp/c.csv', './temp/d.csv',False,'linear')
-    # 可视化
-    conver_to_seq_csv('./temp/d.csv', './temp/e.csv')
+    # # ######### 长泰
+    # # 步骤1：
+    # root = r"E:\project\mvp\Graph-WaveNet\data\water\changtai\origin"
+    # data_fix_concat(root, 'csv', './temp/a.csv')
+    #
+    # # 步骤2：
+    # data_transpose('./temp/a.csv', './temp/b.csv')
+    # # 步骤3：
+    # data_insert_time('./temp/b.csv', './temp/c.csv', '2019-10-01 00:00:00', '2021-09-30 23:00:00', '24H')
+    # # 步骤4
+    # data_clean('./temp/c.csv', './temp/d.csv',False,'linear')
+    # # 可视化
+    # conver_to_seq_csv('./temp/d.csv', './temp/e.csv')
 
 
 

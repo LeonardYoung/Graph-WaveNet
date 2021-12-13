@@ -20,7 +20,7 @@ class GraphConvolution(Module):
             self.bias = Parameter(torch.FloatTensor(out_features))
         else:
             self.register_parameter('bias', None)
-        self.reset_parameters()
+        # self.reset_parameters()
 
     def reset_parameters(self):
         stdv = 1. / math.sqrt(self.weight.size(1))
