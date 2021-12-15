@@ -101,11 +101,43 @@ def data_insert_time(file_in, file_out,start,end,freq):
 # 利用四分位间距检测异常值
 def strange_data(df,col):
 
-    if col == 'pH值':
-        range_left = 6
-        range_right = 8
-        out_df = df[(df[col] < range_left) | (df[col] > range_right)]
-        print('{}超标点个数为：{}'.format(col,len(out_df)))
+    # 计算超标数据个数和占比（三类）
+    # out_df = df
+    # if col == 'pH值':
+    #     out_df = df[(df[col] < 6) | (df[col] > 9)]
+    # elif col == '总氮':
+    #     out_df = df[ df[col] > 1]
+    # elif col == '总磷':
+    #     out_df = df[ df[col] > 0.2]
+    # elif col == '氨氮':
+    #     out_df = df[ df[col] > 1]
+    # elif col == '溶解氧':
+    #     out_df = df[ df[col] < 5]
+    # elif col == '高锰酸盐指数':
+    #     out_df = df[ df[col] > 6]
+    # else:
+    #     return
+    #
+    # print('==={}超标点个数为：{},比例：{:.3f}%'.format(col, len(out_df),len(out_df)/len(df)*100))
+
+    # 计算超标数据个数和占比（五类）
+    # out_df = df
+    # if col == 'pH值':
+    #     out_df = df[(df[col] < 6) | (df[col] > 9)]
+    # elif col == '总氮':
+    #     out_df = df[ df[col] > 2]
+    # elif col == '总磷':
+    #     out_df = df[ df[col] > 0.4]
+    # elif col == '氨氮':
+    #     out_df = df[ df[col] > 2]
+    # elif col == '溶解氧':
+    #     out_df = df[ df[col] < 2]
+    # elif col == '高锰酸盐指数':
+    #     out_df = df[ df[col] > 15]
+    # else:
+    #     return
+
+    print('==={}超标点个数为：{},比例：{:.3f}%'.format(col, len(out_df),len(out_df)/len(df)*100))
 
     if col == '电导率':
         data_bottom,data_top = 125,750
@@ -117,7 +149,7 @@ def strange_data(df,col):
         data_top = q_75 + 1.5 * d
         data_bottom = q_25 - 1.5 * d
         data_bottom = max(data_bottom,0.001)
-    print('{}:数据上下界({:.3f},{:.3f})'.format(col,data_bottom,data_top))
+    # print('{}:数据上下界({:.3f},{:.3f})'.format(col,data_bottom,data_top))
     # print('异常值的个数：', len(df[col][(df[col] > data_top) | (df[col] <= data_bottom)]))
     # 置为缺失值
     df[col][(df[col] > data_top) | (df[col] <= data_bottom)] = None

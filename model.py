@@ -270,6 +270,10 @@ class GLM(nn.Module):
         return adj
 
 import water.config as Config
+
+
+
+
 class gwnet(nn.Module):
     def __init__(self,device, num_nodes, dropout=0.3, supports=None, gcn_bool=True, addaptadj=True,
                  aptinit=None, in_dim=2,out_dim=12,residual_channels=32,dilation_channels=32,
@@ -285,6 +289,7 @@ class gwnet(nn.Module):
         self.adjlearn = Config.adj_learn_type
 
         self.filter_convs = nn.ModuleList()
+        self.lstms = nn.ModuleList()
         self.gate_convs = nn.ModuleList()
         self.residual_convs = nn.ModuleList()
         self.skip_convs = nn.ModuleList()
@@ -354,6 +359,8 @@ class gwnet(nn.Module):
                                                    out_channels=dilation_channels,
                                                    kernel_size=(1,kernel_size),dilation=new_dilation))
 
+                self.lstms.append(nn.LSTM(input_size=32,hidden_size=32,num_layers=2))
+
                 self.gate_convs.append(nn.Conv1d(in_channels=residual_channels,
                                                  out_channels=dilation_channels,
                                                  kernel_size=(1, kernel_size), dilation=new_dilation))
@@ -396,15 +403,21 @@ class gwnet(nn.Module):
                                               device=device))
 
 
-        self.end_conv_1 = nn.Conv2d(in_channels=skip_channels,
-                                  out_channels=end_channels,
-                                  kernel_size=(1,1),
-                                  bias=True)
 
-        self.end_conv_2 = nn.Conv2d(in_channels=end_channels,
-                                    out_channels=out_dim,
-                                    kernel_size=(1,1),
-                                    bias=True)
+
+        if Config.use_LSTM:
+            self.lstm_last = nn.LSTM(input_size=skip_channels,hidden_size=64,num_layers=2)
+            self.dnn_last = nn.Linear(64,3)
+        else:
+            self.end_conv_1 = nn.Conv2d(in_channels=skip_channels,
+                                        out_channels=end_channels,
+                                        kernel_size=(1, 1),
+                                        bias=True)
+
+            self.end_conv_2 = nn.Conv2d(in_channels=end_channels,
+                                        out_channels=out_dim,
+                                        kernel_size=(1, 1),
+                                        bias=True)
 
         self.receptive_field = receptive_field
 
@@ -485,9 +498,14 @@ class gwnet(nn.Module):
             #residual = dilation_func(x, dilation, init_dilation, i)
             residual = x
             # dilated convolution
-            filter = self.filter_convs[i](residual)
+            filter = self.filter_convs[i](x)
             filter = torch.tanh(filter)
-            gate = self.gate_convs[i](residual)
+
+            # filter = filter.transpose(1,3)
+            # filter = self.lstms[i](filter)
+            # filter = filter.transpose(1, 3)
+
+            gate = self.gate_convs[i](x)
             gate = torch.sigmoid(gate)
             x = filter * gate
 
@@ -518,12 +536,23 @@ class gwnet(nn.Module):
 
             x = x + residual[:, :, :, -x.size(3):]
 
-
             x = self.bn[i](x)
 
-        x = F.relu(skip)
-        x = F.relu(self.end_conv_1(x))
-        x = self.end_conv_2(x)
+
+        # # 使用LSTM
+        if Config.use_LSTM:
+            x = skip.squeeze(dim=3)
+            x = x.transpose(1,2)
+            x = self.lstm_last(x)[0]
+            x = self.dnn_last(x)
+            x = x.transpose(1,2)
+            x = x.unsqueeze(3)
+        # 使用CNN
+        else:
+            x = F.relu(skip)
+            x = F.relu(self.end_conv_1(x))
+            x = self.end_conv_2(x)
+
         return x
 
 

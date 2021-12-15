@@ -1,6 +1,8 @@
 
 # place = 'changtai'
 place = 'shangban'
+epoch = 1000
+patience = 50
 batch_size = 64
 device = 'cuda:0'
 gcn_bool = True
@@ -12,6 +14,8 @@ adj_learn_type = 'weigthed'       # 节点嵌入 + 权重矩阵
 # adj_learn_type = 'merge3'       # 节点嵌入 + 权重矩阵 + 对称阵
 # adj_learn_type = 'GLM'            # GLM
 # adj_learn_type = 'gcnOfficial'       # 节点嵌入 + 权重矩阵
+
+use_LSTM = True
 
 num_factors = 6     # 因子数量
 num_nodes = 10

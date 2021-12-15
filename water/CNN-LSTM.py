@@ -6,29 +6,10 @@ import torch.nn.functional as F
 import time
 from utils import earlystopping
 
-# Define model
-# class NeuralNetwork(nn.Module):
-#     def __init__(self):
-#         super(NeuralNetwork, self).__init__()
-#         self.flatten = nn.Flatten()
-#         self.linear_relu_stack = nn.Sequential(
-#             nn.Linear(24, 64),
-#             nn.ReLU(),
-#             nn.Linear(64, 64),
-#             nn.ReLU(),
-#             nn.Linear(64, 3)
-#         )
-#
-#     def forward(self, x):
-#         x = self.flatten(x)
-#         logits = self.linear_relu_stack(x)
-#         return logits
-#
-# model = NeuralNetwork().to(device)
 
-class lstm(nn.Module):
+class CNN_LSTM(nn.Module):
     def __init__(self, input_size=24, output_size=9, hidden_size=64,  num_layer=2):
-        super(lstm, self).__init__()
+        super(CNN_LSTM, self).__init__()
         self.layer1 = nn.LSTM(input_size, hidden_size, num_layer)
         self.layer2 = nn.Linear(hidden_size, output_size)
         # self.layer3 = nn.Linear(32, output_size)
@@ -43,37 +24,6 @@ class lstm(nn.Module):
         # x = self.layer3(x)
         x = x.view(s, b, -1)
         return x
-
-
-class CNN_LSTM(nn.Module):
-    def __init__(self, input_size=24, output_size=3, hidden_size=64,  num_layer=2):
-        super(CNN_LSTM, self).__init__()
-
-        self.start_cnn = nn.Conv1d(in_channels=1,out_channels=16,kernel_size=1)
-
-        self.cnn1 = nn.Conv1d(in_channels=16, out_channels=32,kernel_size=1)
-        self.cnn2 = nn.Conv1d(in_channels=32,out_channels=32,kernel_size=1)
-
-        self.lstm1 = nn.LSTM(input_size=24, hidden_size=24, num_layers=2)
-        # self.lstm1 = nn.GRU(input_size=24, hidden_size=64, num_layers=2)
-        self.dnn = nn.Linear(24, 3)
-
-    def forward(self, x):
-        x = self.start_cnn(x)
-        # print(x.shape)
-        x = self.cnn1(x)
-        # x = torch.relu(x)
-        # x = F.dropout(x, 0.3, training=self.training)
-        x = self.cnn2(x)
-        # x = F.dropout(x, 0.3, training=self.training)
-        # x = torch.relu(x)
-
-
-        x = self.lstm1(x)[0]
-        x = self.dnn(x)
-
-        return x
-
 
 
 def train(dataloader, model, loss_fn, optimizer):
@@ -239,7 +189,6 @@ def run_once(root_dir, site_index, factor_index,early_stopping,model_save_path,
                                    64, 64, 64, False)
 
     model = CNN_LSTM(input_length, output_length).to(device)
-    # model = lstm(input_length, output_length).to(device)
     model = model.double()
 
     loss_fn = util.masked_mae
@@ -287,37 +236,12 @@ if __name__ == '__main__':
 
     input_size = 24
     predict_size = 3
-    train_epoch = 300
+    train_epoch = 150
 
     # ###################### 单因子
-    early_stopping = earlystopping.EarlyStopping(patience=50, path=model_save_path, verbose=True)
+    early_stopping = earlystopping.EarlyStopping(patience=30, path=model_save_path, verbose=True)
     res = run_once('data/water/shangban/singlesingle',0, 0, early_stopping,model_save_path, input_size,predict_size,train_epoch,True)
     print("test MAE = {},MAPE={}".format(res[0],res[1]))
-
-    # ################单因子全站点
-    # factor_index = 0
-    # t1 = time.time()
-    # site_result = []
-    # for site in range(10):
-    #     early_stopping = earlystopping.EarlyStopping(patience=50, path=model_save_path, verbose=True)
-    #     res = run_once('data/water/shangban/singlesingle', site, factor_index,early_stopping,
-    #                    model_save_path,input_size,predict_size,train_epoch,True)
-    #     site_result.append(res[0])
-    #
-    # t2 = time.time()
-    #
-    # # 打印结果
-    # print("-------------------MAE-------------------------------")
-    # line = ""
-    # for site in range(len(site_result)):
-    #     # print(all_factor_result[factor][site])
-    #     line += "{:.4f},".format(site_result[site])
-    # print(line)
-    #
-    # factor_mean = np.mean(site_result[:])
-    # print("{:.4f}".format(factor_mean))
-
-
     # ####################### 全站点 全因子实验
     # t1 = time.time()
     # all_factor_result = []
@@ -325,7 +249,7 @@ if __name__ == '__main__':
     #     site_result = []
     #     for site in range(10):
     #         early_stopping = earlystopping.EarlyStopping(patience=30, path=model_save_path, verbose=True)
-    #         res = run_once('data/water/shangban/singlesingle', site, factor,early_stopping,
+    #         res = run_once('data/water/shangban/daysinglesingle', site, factor,early_stopping,
     #                        model_save_path,input_size,predict_size,train_epoch,True)
     #         site_result.append(res)
     #     all_factor_result.append(site_result)

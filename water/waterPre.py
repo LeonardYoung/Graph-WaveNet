@@ -443,19 +443,19 @@ if __name__ == "__main__":
     # place = 'changtai'
     place = 'shangban'
 
-    # #### 生成单站点单因子数据集
+    #### 生成单站点单因子数据集
     # for site in range(len(ids_shangban)):
     #     for factor in range(len(factors)):
-    #         generate_one_site_one_factor('../data/water/shangban', '/daySingleFac','/daysinglesingle', factor,site,24,3)
-    #
+    #         generate_one_site_one_factor('../data/water/shangban', '/singleFac','/singlesingle', factor,site,24,3)
+
 
 
     ####### 单因子数据集
     # 上坂
-    # for i in range(9):
-    #     file_name = merge_one_factor(ids_shangban,'../data/water/shangban/water2020_day.csv',
-    #                                  i, '../data/water/shangban/daySingleFac')
-    #     generate_dataset(file_name, '../data/water/shangban/daySingleFac/'+str(i)+'/',24,3)
+    for i in range(9):
+        file_name = merge_one_factor(ids_shangban,'../data/water/shangban/water_4H.csv',
+                                     i, '../data/water/shangban/singleFac')
+        generate_dataset(file_name, '../data/water/shangban/singleFac/'+str(i)+'/',24,3)
 
     # 长泰
     # for i in range(9):
@@ -481,9 +481,9 @@ if __name__ == "__main__":
 
 
     # ######## 生成全站点多因子数据集！！（多维变量）
-    merge_all_factor(f'../data/water/{place}/water_24H.csv', f'../data/water/{place}/allDay/mergeAll.h5',
-                     ids_shangban,[0,1,2,3,6,8])
-    generate_data(f'../data/water/{place}/allDay/mergeAll.h5', f'../data/water/{place}/allDay',
-                  site_num = 10,factor_num=6,seq_length_x=24, seq_length_y=3)
+    # merge_all_factor(f'../data/water/{place}/water_24H.csv', f'../data/water/{place}/allDay/mergeAll.h5',
+    #                  ids_shangban,[0,1,2,3,6,8])
+    # generate_data(f'../data/water/{place}/allDay/mergeAll.h5', f'../data/water/{place}/allDay',
+    #               site_num = 10,factor_num=6,seq_length_x=24, seq_length_y=3)
 
     pass

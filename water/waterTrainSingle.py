@@ -148,7 +148,7 @@ def run_once():
         supports = None
 
     model_save_path = "./data/save_models/singFactor/waveNet.pth"
-    early_stopping = earlystopping.EarlyStopping(patience=40, path=model_save_path, verbose=True)
+    early_stopping = earlystopping.EarlyStopping(patience=Config.patience, path=model_save_path, verbose=True)
 
     engine = trainer( scaler, args.in_dim, args.seq_length, args.num_nodes, args.nhid, args.dropout,
                          args.learning_rate, args.weight_decay, device, supports, args.gcn_bool, args.addaptadj,
@@ -189,9 +189,8 @@ if __name__ == "__main__":
         args.aptonly = False
         args.addaptadj = False
 
-
+    args.epochs = Config.epoch
     # ######  单因子全站点实验参数
-    args.epochs = 300
     args.data = f'data/water/{place}/singleFac/0'
     args.adjdata = f'data/water/{place}/adjs/adj_all_one.pkl'
     # 输入维度（包括时间维度）
@@ -215,6 +214,8 @@ if __name__ == "__main__":
 
 
     # ############跑1次
+
+
     t1 = time.time()
     run_once()
     t2 = time.time()
