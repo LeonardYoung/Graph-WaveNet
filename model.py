@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 import sys
-from dtw import dtw
+# from dtw import dtw
 import numpy as np
 import math
 from torch.nn.parameter import Parameter
@@ -37,11 +37,22 @@ class linear(nn.Module):
         return self.mlp(x)
 
 
+import water.config as Config
 class gcnWeight(nn.Module):
+    # 用于描述因子间相互作用的邻接矩阵
+    # vec_length = 16
+    # nodevec1 = nn.Parameter(torch.randn(Config.num_factors, vec_length).to(Config.device), requires_grad=True).to(Config.device)
+    # nodevec2 = nn.Parameter(torch.randn(vec_length, Config.num_factors).to(Config.device), requires_grad=True).to(Config.device)
+    # weight_factor = nn.Parameter(torch.randn(Config.num_factors, Config.num_factors).to(Config.device),
+    #                                   requires_grad=True).to(Config.device)
+
     def __init__(self,c_in,c_out,dropout,support_len,order,num_nodes,device,gcn_site_type=True):
         super(gcnWeight,self).__init__()
         self.nconv = nconv()
-        c_in = (order*support_len+1)*c_in
+        if Config.subGraph:
+            c_in = (order*support_len+2)*c_in
+        else:
+            c_in = (order * support_len + 1) * c_in
         self.mlp = linear(c_in,c_out)
         self.dropout = dropout
         self.order = order
@@ -49,6 +60,15 @@ class gcnWeight(nn.Module):
         self.weight = nn.Parameter(torch.randn(num_nodes, num_nodes).to(device), requires_grad=True).to(device)
         ####
         self.weight2 = nn.Parameter(torch.randn(num_nodes, num_nodes).to(device), requires_grad=True).to(device)
+
+        # 用于描述因子间相互作用的邻接矩阵
+        if Config.subGraph:
+            vec_length = 32
+            self.nodevec1 = nn.Parameter(torch.randn(Config.num_factors, vec_length).to(device), requires_grad=True).to(device)
+            self.nodevec2 = nn.Parameter(torch.randn(vec_length, Config.num_factors).to(device), requires_grad=True).to(device)
+            self.weight_factor = nn.Parameter(torch.randn(Config.num_factors, Config.num_factors).to(device), requires_grad=True).to(device)
+            self.lamb = nn.Parameter(torch.randn(1, 1).to(device), requires_grad=True).to(device)
+            # self.factor_adj = np.kron(np.eye(Config.num_nodes,dtype=int),np.zeros((Config.num_factors,Config.num_factors)))
 
     def forward(self,x,support,dtw_matrix=None):
         out = [x]
@@ -82,6 +102,7 @@ class gcnWeight(nn.Module):
             # wa = torch.sigmoid(wa)      # 遗忘
             for a in support:
                 wa = torch.mm(wa,a)
+
             x1 = self.nconv(x,wa)
             out.append(x1)
             for k in range(2, self.order + 1):
@@ -89,11 +110,31 @@ class gcnWeight(nn.Module):
                 out.append(x2)
                 x1 = x2
 
-            h = torch.cat(out,dim=1)
+            # 因子子图!!
+            if Config.subGraph:
+                fac_out = []
+                adp = F.softmax(F.relu(torch.mm(self.nodevec1, self.nodevec2)), dim=1)
+                wa_f = torch.mm(self.weight_factor, adp)
+                for site in range(Config.num_nodes):
+                    begin = site * Config.num_factors
+                    end = begin + Config.num_factors
+                    # 取出一个站点的所有因子
+                    x_one_site = x[:,:,begin:end,:]
+
+                    fac_out.append(self.nconv(x_one_site,wa_f))
+                fac_out = torch.cat(fac_out,2)
+                out.append(fac_out)
+                out_add_fac = []
+                for fea in out:
+                    out_add_fac.append(fea + self.lamb * fac_out)
+
+                h = torch.cat(out_add_fac,dim=1)
+                # h = fac_out
+            else:
+                h = torch.cat(out,dim=1)
             h = self.mlp(h)
             h = F.dropout(h, self.dropout, training=self.training)
         return h
-
 
 
 class GraphConvolution(Module):

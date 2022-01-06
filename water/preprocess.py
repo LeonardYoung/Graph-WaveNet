@@ -65,6 +65,8 @@ def data_transpose(file_in='./first.csv', dataTrans="./second.csv"):
     data_df.to_csv(dataTrans, header=True, index=False, encoding='utf_8_sig')
     print('转置数据完成...')
 
+    # print(data_df.describe())
+
 
 # 预处理3 插入缺失时间
 def data_insert_time(file_in, file_out,start,end,freq):
@@ -137,7 +139,7 @@ def strange_data(df,col):
     # else:
     #     return
 
-    print('==={}超标点个数为：{},比例：{:.3f}%'.format(col, len(out_df),len(out_df)/len(df)*100))
+    # print('==={}超标点个数为：{},比例：{:.3f}%'.format(col, len(out_df),len(out_df)/len(df)*100))
 
     if col == '电导率':
         data_bottom,data_top = 125,750
@@ -322,11 +324,11 @@ if __name__ == '__main__':
     # data_fix_concat(root,'xls','./temp/1.csv')
     #
     # # 步骤2：
-    # data_transpose('./temp/1.csv', './temp/2.csv')
+    data_transpose('./temp/1.csv', './temp/2.csv')
     # # 步骤3：
     # data_insert_time('./temp/2.csv','./temp/3.csv','2020-01-01 00:00:00', '2020-10-31 23:00:00','4H')
     # # 步骤4
-    data_clean('./temp/3.csv', './temp/4.csv',False,'linear')
+    # data_clean('./temp/3.csv', './temp/4.csv',False,'linear')
     # 可视化
     # conver_to_seq_csv('./temp/4.csv', './temp/5.csv')
 

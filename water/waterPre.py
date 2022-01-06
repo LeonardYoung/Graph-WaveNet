@@ -21,11 +21,12 @@ ids_changtai = [
 ]
 
 # 表格中的顺序
+#           0       1       2       3      4       5        6       7           8
 factors = ['pH值', '总氮', '总磷', '氨氮', '水温', '浑浊度', '溶解氧', '电导率', '高锰酸盐指数']
 factors_use = ['pH值', '总氮', '总磷', '氨氮', '溶解氧', '高锰酸盐指数']
 
 
-# 横向合并一个因子，保存为h5
+# 合并一个因子在所有站点的数据，，保存为h5，有多少个站点即保存多少个列
 def merge_one_factor(ids,input_file, inc ,out_dir):
     df = pd.read_csv(input_file, usecols=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
     merge = None
@@ -59,7 +60,7 @@ def generate_multi_factor(input_file,root_dir,include_site,include_factor,seq_le
     merge = None
     for site in include_site:
         one = df.loc[df['站点名称'] == site]
-        one.columns = ['time', 'site'] + [site + factors[i] for i in include_factor]
+        one.columns = ['time', 'site'] + [factors[i] + site for i in include_factor]
         one.drop(columns=['site'], axis=1, inplace=True)
         merge = one if merge is None else pd.merge(merge, one, on='time')
 
@@ -68,6 +69,15 @@ def generate_multi_factor(input_file,root_dir,include_site,include_factor,seq_le
     exi = os.path.exists(root_dir)
     if not exi:
         os.mkdir(root_dir)
+
+    # # 更改列的顺序，将同因子放在一起。
+    # new_cols = []
+    # for fac in include_factor:
+    #     for site in include_site:
+    #         new_cols.append(factors[fac] + site)
+    # merge = merge[new_cols]
+
+
     # 保存
     merge.to_csv(root_dir+'/data.csv', encoding='utf_8_sig')
 
@@ -452,10 +462,10 @@ if __name__ == "__main__":
 
     ####### 单因子数据集
     # 上坂
-    for i in range(9):
-        file_name = merge_one_factor(ids_shangban,'../data/water/shangban/water_4H.csv',
-                                     i, '../data/water/shangban/singleFac')
-        generate_dataset(file_name, '../data/water/shangban/singleFac/'+str(i)+'/',24,3)
+    # for i in range(9):
+    #     file_name = merge_one_factor(ids_shangban,'../data/water/shangban/water_4H.csv',
+    #                                  i, '../data/water/shangban/singleFac')
+    #     generate_dataset(file_name, '../data/water/shangban/singleFac/'+str(i)+'/',24,3)
 
     # 长泰
     # for i in range(9):
@@ -466,9 +476,9 @@ if __name__ == "__main__":
 
     # ####### 生成多因子数据集（每个因子是一个节点）
     # 上坂
-    # generate_multi_factor('../data/water/shangban/water_24H.csv','../data/water/shangban/multiFacDay',
-    #                       ids_shangban,[0,1,2,3,6,8],
-    #                       24,3)
+    generate_multi_factor('../data/water/shangban/water_4H.csv','../data/water/shangban/multiFac',
+                          ids_shangban,[0,1,2,3,6,8],
+                          24,3)
 
     # get_adj_file('../data/water/shangban', 60,'adj_60_8eye_one.pkl')
 

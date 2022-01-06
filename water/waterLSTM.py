@@ -229,17 +229,36 @@ def pred_save(dataloader,model_save_path, model, output_file):
 
     # print(csv_str)
 
-
+# import water.SVR.data_generate as data_generate
 def run_once(root_dir, site_index, factor_index,early_stopping,model_save_path,
              input_length,output_length, epochs, save_pred_csv=False):
     print('################################')
     print('runing site:{},factor:{}'.format(site_index,factor_index))
     site_code = "abcdefghijklmn"
-    dataloader = util.load_dataset(root_dir + '/{}{}'.format(factor_index,site_code[site_index]),
-                                   64, 64, 64, False)
+    # dataloader = util.load_dataset(root_dir + '/{}{}'.format(factor_index,site_code[site_index]),
+    #                                64, 64, 64, False)
+    place = 'shangban'
 
-    model = CNN_LSTM(input_length, output_length).to(device)
-    # model = lstm(input_length, output_length).to(device)
+    data = util.load_dataset(f'data/water/{place}/singleFac/{factor_index}', 64,64,64)
+    for category in ['train', 'val', 'test']:
+        # 去掉时间维
+        data['x_' + category] = data['x_' + category][..., 0]
+        data['y_' + category] = data['x_' + category][..., 0]
+
+        # 将不同站点的数据拼接在一起。
+        site_num = data['x_' + category].shape[2]
+        x_concate = []
+        y_concate = []
+        for i in range(site_num):
+            x_concate.append(data['x_' + category][:, :, i])
+            y_concate.append(data['y_' + category][..., i])
+        data[category + 'loader'].set_xy(data['x_' + category],data['y_' + category])
+
+        #
+        data['x_' + category]
+
+    # model = CNN_LSTM(input_length, output_length).to(device)
+    model = lstm(input_length, output_length).to(device)
     model = model.double()
 
     loss_fn = util.masked_mae
@@ -271,9 +290,16 @@ ids_shangban = [ '天宝大水港排涝站','中排渠涝站（天宝）',
 factors = ['pH值', '总氮', '总磷', '氨氮', '水温', '浑浊度', '溶解氧', '电导率', '高锰酸盐指数']
 
 
+import random
 if __name__ == '__main__':
+    seed = 42
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
     # Get cpu or gpu device for training.
     print('start train...')
+
     # torch.cuda.set_device(1)
     # device = "cuda:1" if torch.cuda.is_available() else "cpu"
     if torch.cuda.is_available():
@@ -287,7 +313,7 @@ if __name__ == '__main__':
 
     input_size = 24
     predict_size = 3
-    train_epoch = 300
+    train_epoch = 1000
 
     # ###################### 单因子
     early_stopping = earlystopping.EarlyStopping(patience=50, path=model_save_path, verbose=True)

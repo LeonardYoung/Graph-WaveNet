@@ -1,3 +1,10 @@
+# 在终端运行需要
+import sys
+import os
+curPath = os.path.abspath(os.path.dirname(__file__))
+rootPath = os.path.split(curPath)[0]
+sys.path.append(rootPath)
+
 import torch
 import numpy as np
 import argparse
@@ -6,6 +13,7 @@ import util
 import matplotlib.pyplot as plt
 from engine import trainer
 from utils import earlystopping
+from torchmetrics import MeanAbsoluteError
 
 
 parser = argparse.ArgumentParser()
@@ -29,7 +37,7 @@ parser.add_argument('--weight_decay',type=float,default=0.0001,help='weight deca
 parser.add_argument('--epochs',type=int,default=100,help='')
 parser.add_argument('--print_every',type=int,default=50,help='')
 #parser.add_argument('--seed',type=int,default=99,help='random seed')
-parser.add_argument('--save',type=str,default='./garage/metr',help='save path')
+parser.add_argument('--save',type=str,default='./data/output/model/',help='save path')
 parser.add_argument('--expid',type=int,default=1,help='experiment id')
 import water.config as Config
 
@@ -77,6 +85,7 @@ def test(engine,dataloader,model_path):
     print("Training finished")
     # print("The valid loss on best model is", str(round(his_loss[bestid], 4)))
 
+    # 打印出邻接矩阵
     if args.gcn_bool and engine.model.adj is not None and False:
         adj = engine.model.adj.to('cpu').numpy()
 
@@ -93,6 +102,50 @@ def test(engine,dataloader,model_path):
 
     # 单维
     if args.in_dim == 2:
+        # 计算r，
+        # yhat,realy
+
+        # 保存变量
+        preds = scaler.inverse_transform(yhat)
+        save_root = f"data/output/{Config.out_dir}/"
+        if not os.path.exists(save_root):
+            os.mkdir(save_root)
+        torch.save(preds,save_root + "preds")
+        torch.save(realy,save_root + "realy")
+
+
+        # 按照步长计算误差
+        # MAE_object = MeanAbsoluteError()
+        # MAE_object = MAE_object.to(Config.device)
+        # mae_err = MAE_object(preds, realy)
+        # print(f"MAE_ERR={mae_err}")
+        #
+        # for i in range(3):
+        #     MAE_object = MeanAbsoluteError()
+        #     MAE_object = MAE_object.to(Config.device)
+        #     mae_err = MAE_object(preds[:,:,i], realy[:,:,i])
+        #     print(f"step={i+1},MAE_ERR={mae_err}")
+        #
+
+        #
+        amae = []
+        amape = []
+        armse = []
+        for i in range(3):
+            pred = scaler.inverse_transform(yhat[:, :, i])
+            real = realy[:, :, i]
+            metrics = util.metric(pred, real)
+            log = 'Evaluate best model on test data for horizon {:d}, Test MAE: {:.4f}, Test MAPE: {:.4f}, Test RMSE: {:.4f}'
+            print(log.format(i + 1, metrics[0], metrics[1], metrics[2]))
+            amae.append(metrics[0])
+            amape.append(metrics[1])
+            armse.append(metrics[2])
+
+        log = 'On average over 3 horizons, Test MAE: {:.4f}, Test MAPE: {:.4f}, Test RMSE: {:.4f}'
+        print(log.format(np.mean(amae), np.mean(amape), np.mean(armse)))
+        # torch.save(engine.model.state_dict(),f'{args.save}_exp{}.pth' )
+
+        # 按照站点分别计算
         amae = []
         amape = []
         armse = []
@@ -122,6 +175,7 @@ def run_once():
     # set seed
     # torch.manual_seed(args.seed)
     # np.random.seed(args.seed)
+
 
     # load data
     device = torch.device(args.device)
@@ -169,9 +223,15 @@ def run_once():
     return test(engine,dataloader,model_save_path)
 
 
-
+import random
 if __name__ == "__main__":
     place = Config.place
+
+    # set seed
+    random.seed(Config.seed)
+    np.random.seed(Config.seed)
+    torch.manual_seed(Config.seed)
+    torch.cuda.manual_seed(Config.seed)
 
     args.aptonly = True
     args.addaptadj = True
@@ -197,13 +257,12 @@ if __name__ == "__main__":
     args.in_dim = 2
 
     # # ######  多因子实验参数（每个因子是一个站点）
-    # args.epochs = 1000
     # args.data = f'data/water/{place}/multiFac'
     # args.adjdata = f'data/water/{place}/adjs/adj_all_one.pkl'
     # # 输入维度（包括时间维度）
     # args.in_dim = 2
     # # 图节点数
-    # args.num_nodes = 42
+    # args.num_nodes = 60
 
     ######  全因子多站点实验参数
     # args.epochs = 1000
@@ -229,16 +288,18 @@ if __name__ == "__main__":
     #     print("data::{},running {} st".format(args.data,i+1))
     #     mae = run_once()
     #     print(mae)
-    #     mae_list.append(mae[0])
+    #     mae_list.append(mae)
     # print(mae_list)
-    # print("TOTAL MEAN MAE={}".format(np.mean(mae_list)))
+    # mae_list = np.array(mae_list)
+    # print("TOTAL MEAN MAE={}".format(np.mean(mae_list[:,0])))
+    # print("TOTAL MEAN MAPE={}".format(np.mean(mae_list[:,1])))
+    # print("TOTAL MEAN RMSE={}".format(np.mean(mae_list[:,2])))
     # t2 = time.time()
     # print("Total time spent: {:.4f}".format(t2 - t1))
 
 
     # ########### 自动进行单因子实验
     # t1 = time.time()
-    # args.epochs = 300
     # result_log = ""
     #
     #
@@ -247,15 +308,15 @@ if __name__ == "__main__":
     # for fac in factor_index:
     #     args.data = f'data/water/{place}/singleFac/' + str(fac)
     #
-    #     m_mae_list = []
+    #     mae_list = []
     #     for i in range(5):
     #         print("data::{},running {} st".format(args.data,i+1))
     #         mae = run_once()
     #         print(mae)
-    #         m_mae_list.append(mae[0])
-    #     m_mae = np.mean(m_mae_list)
-    #     print(m_mae_list)
-    #     result_log += "data=={},MAE={:.4f}\n".format(args.data, m_mae)
+    #         mae_list.append(mae)
+    #     mae_list = np.array(mae_list)
+    #     result_log += "data=={},MAE={:.4f},MAPE={:.4f},RMSE={:.4f}\n"\
+    #         .format(args.data,np.mean(mae_list[:,0]),np.mean(mae_list[:,1]),np.mean(mae_list[:,2]) )
     #     print(result_log)
     #
     #
