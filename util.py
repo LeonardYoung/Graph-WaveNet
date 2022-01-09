@@ -31,6 +31,7 @@ class DataLoader(object):
     def set_xy(self,x,y):
         self.xs = x
         self.ys = y
+        self.origin_xs, self.origin_ys = x, y
 
     def get_origin(self):
         return self.origin_xs,self.origin_ys

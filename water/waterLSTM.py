@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import time
 from utils import earlystopping
-
+import os
 # Define model
 # class NeuralNetwork(nn.Module):
 #     def __init__(self):
@@ -25,6 +25,8 @@ from utils import earlystopping
 #         return logits
 #
 # model = NeuralNetwork().to(device)
+place = 'shangban'
+fac_index = 8
 
 class lstm(nn.Module):
     def __init__(self, input_size=24, output_size=9, hidden_size=64,  num_layer=2):
@@ -34,6 +36,7 @@ class lstm(nn.Module):
         # self.layer3 = nn.Linear(32, output_size)
 
     def forward(self, x):
+        # x = nn.BatchNorm2d(x)
         x, _ = self.layer1(x)
         s, b, h = x.size()
         x = x.view(s * b, h)  # view函数调整矩阵的形状，类似于reshape
@@ -125,34 +128,62 @@ def validate(dataloader, model, loss_fn):
     loss_result = np.mean(loss_list)
     return loss_result
 
-
+from sklearn import metrics as sk_metrics
 def test(dataloader,model_save_path, model, loss_fn):
     model.eval()
     model.load_state_dict(torch.load(model_save_path))
     scaler = dataloader['scaler']
-    mae_list = []
-    mape_list = []
+    # mae_list = []
+    # mape_list = []
     with torch.no_grad():
-        for X, y in dataloader['test_loader'].get_iterator():
-            X = scaler.transform(X)
+        x_test = dataloader['x_test']
+        y_test = dataloader['y_test']
+        # for X, y in dataloader['test_loader'].get_iterator():
+        x_test = scaler.transform(x_test)
 
-            X = np.expand_dims(X, axis=1)
-            y = np.expand_dims(y, axis=1)
+        x_test = np.expand_dims(x_test, axis=1)
+        y_test = np.expand_dims(y_test, axis=1)
 
-            X = torch.tensor(X).to(device)
-            y = torch.tensor(y).to(device)
+        x_test = torch.tensor(x_test).to(device)
+        y_test = torch.tensor(y_test).to(device)
 
-            pred = model(X)
-            pred_real = scaler.inverse_transform(pred)
+        pred = model(x_test)
+        pred = scaler.inverse_transform(pred)
 
-            metrics = util.metric(pred_real, y)
+        # 保存预测值到文件
+        save_root = f"data/output/{place}/y/LSTM/{fac_index}"
+        if not os.path.exists(save_root):
+            os.makedirs(save_root)
 
-            # MAE
-            mae_list.append(metrics[0])
-            # MAPE
-            mape_list.append(metrics[1])
+        pred_np = pred.to('cpu').numpy()
+        realy_np = y_test.to('cpu').numpy()
+        np.savez_compressed(
+            os.path.join(save_root, f"out.npz"),
+            y_pred=pred_np,
+            y_test=realy_np
+        )
 
-    return np.mean(mae_list),np.mean(mape_list)
+        metrics = util.metric(pred, y_test)
+
+        for step in range(3):
+            y_test_t = y_test[..., step].to('cpu').numpy()
+            y_pred_t = pred[..., step].to('cpu').numpy()
+
+            r2 = sk_metrics.r2_score(y_test_t, y_pred_t)
+            mae = sk_metrics.mean_absolute_error(y_test_t, y_pred_t)
+            rmse = sk_metrics.mean_squared_error(y_test_t, y_pred_t) ** 0.5
+            mape = sk_metrics.mean_absolute_percentage_error(y_test_t, y_pred_t)
+
+            print(f'MAE:{mae:.3f},RMSE:{rmse:.3f},MAPE:{mape:.3f},R2:{r2:.3f}')
+
+        # for step in range(3):
+        #     metric = util.metric(pred[...,step],y_test[...,step])
+        # # MAE
+        # mae_list.append(metrics[0])
+        # # MAPE
+        # mape_list.append(metrics[1])
+
+    return metrics[0],metrics[1]
 
 
 def pred_save(dataloader,model_save_path, model, output_file):
@@ -230,20 +261,17 @@ def pred_save(dataloader,model_save_path, model, output_file):
     # print(csv_str)
 
 # import water.SVR.data_generate as data_generate
-def run_once(root_dir, site_index, factor_index,early_stopping,model_save_path,
+def run_once(root_dir, factor_index,early_stopping,model_save_path,
              input_length,output_length, epochs, save_pred_csv=False):
     print('################################')
-    print('runing site:{},factor:{}'.format(site_index,factor_index))
-    site_code = "abcdefghijklmn"
-    # dataloader = util.load_dataset(root_dir + '/{}{}'.format(factor_index,site_code[site_index]),
-    #                                64, 64, 64, False)
+    print('runing factor:{}'.format(factor_index))
     place = 'shangban'
 
     data = util.load_dataset(f'data/water/{place}/singleFac/{factor_index}', 64,64,64)
     for category in ['train', 'val', 'test']:
         # 去掉时间维
         data['x_' + category] = data['x_' + category][..., 0]
-        data['y_' + category] = data['x_' + category][..., 0]
+        data['y_' + category] = data['y_' + category][..., 0]
 
         # 将不同站点的数据拼接在一起。
         site_num = data['x_' + category].shape[2]
@@ -252,10 +280,12 @@ def run_once(root_dir, site_index, factor_index,early_stopping,model_save_path,
         for i in range(site_num):
             x_concate.append(data['x_' + category][:, :, i])
             y_concate.append(data['y_' + category][..., i])
-        data[category + 'loader'].set_xy(data['x_' + category],data['y_' + category])
+        x_concate = np.concatenate(x_concate)
+        y_concate = np.concatenate(y_concate)
+        data['x_' + category] = x_concate
+        data['y_' + category] = y_concate
+        data[category + '_loader'].set_xy(data['x_' + category],data['y_' + category])
 
-        #
-        data['x_' + category]
 
     # model = CNN_LSTM(input_length, output_length).to(device)
     model = lstm(input_length, output_length).to(device)
@@ -266,8 +296,8 @@ def run_once(root_dir, site_index, factor_index,early_stopping,model_save_path,
 
     for t in range(epochs):
         # print(f"Epoch {t+1}\n-------------------------------")
-        train(dataloader, model, nn.MSELoss(), optimizer)
-        loss_result = validate(dataloader, model, loss_fn)
+        train(data, model, nn.MSELoss(), optimizer)
+        loss_result = validate(data, model, loss_fn)
         if t % 10 == 9:
             print("Epoch:{},validate loss:{}".format(t + 1, loss_result))
         early_stopping(loss_result, model)
@@ -276,9 +306,9 @@ def run_once(root_dir, site_index, factor_index,early_stopping,model_save_path,
             break
 
     if save_pred_csv:
-        pred_save(dataloader,model_save_path, model,"data/predict_result/{}{}.csv".format(factor_index,site_code[site_index]))
+        pred_save(data,model_save_path, model,"data/predict_result/{}{}.csv".format(factor_index,site_code[site_index]))
 
-    loss_result = test(dataloader,model_save_path, model, loss_fn)
+    loss_result = test(data,model_save_path, model, loss_fn)
     return loss_result
 
 
@@ -309,7 +339,7 @@ if __name__ == '__main__':
         device = "cpu"
 
     print("Using {} device".format(device))
-    model_save_path = "./data/save_models/simpleLSTM/LSTM.pth"
+    model_save_path = f"data/output/{place}/model/LSTM/model.pth"
 
     input_size = 24
     predict_size = 3
@@ -317,7 +347,7 @@ if __name__ == '__main__':
 
     # ###################### 单因子
     early_stopping = earlystopping.EarlyStopping(patience=50, path=model_save_path, verbose=True)
-    res = run_once('data/water/shangban/singlesingle',0, 0, early_stopping,model_save_path, input_size,predict_size,train_epoch,True)
+    res = run_once('data/water/shangban/singlesingle',fac_index,  early_stopping,model_save_path, input_size,predict_size,train_epoch)
     print("test MAE = {},MAPE={}".format(res[0],res[1]))
 
     # ################单因子全站点

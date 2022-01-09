@@ -8,7 +8,7 @@ factors = ['pH值', '总氮', '总磷', '氨氮', '水温', '浑浊度', '溶解
 def plot_regresion():
     for fac in [0, 1, 2, 3, 6, 8]:
         for step in range(3):
-            y = np.load(f'data/output/y/SVR/SVR_fac{fac}_step{step}.npz')
+            y = np.load(f'data/output/shangban/y/SVR/SVR_fac{fac}_step{step}.npz')
             # 建立线性回归模型
             regr = linear_model.LinearRegression()
             # 拟合
@@ -37,7 +37,10 @@ def plot_regresion():
 
             plt.text(0.05, 0.8, f'y={k[0][0]:.3f}x+{b[0]:.3f}\nR2={r2:.3f}',
                      fontsize=16, transform=ax.transAxes)
-            plt.savefig(f'data/output/figure/SVR/SVR{factors[fac]}_步长{step + 1}_回归.png'
+            plt.savefig(f'data/output/shangban/figure/SVR/SVR{factors[fac]}_步长{step + 1}_回归.png'
                         , dpi=960)
             plt.show()
 
+
+if __name__ == '__main__':
+    plot_regresion()

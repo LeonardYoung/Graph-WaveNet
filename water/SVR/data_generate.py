@@ -137,6 +137,15 @@ def load_single_data(place='shangban',fac_index=0,y_bool=False,y_length=1):
     return data['x_train'], data['y_train'], data['x_val'], data['y_val'], data['x_test'], data['y_test']
 
 
+# 合并站点数据，站点维度下标为1
+def merge_site(data):
+    site_num = data.shape[1]
+    concate = []
+    for i in range(site_num):
+        concate.append(data[:, i])
+    return np.concatenate(concate)
+
+
 if __name__ == '__main__':
     # generate(False,'real')
     pass

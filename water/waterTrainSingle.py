@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from engine import trainer
 from utils import earlystopping
 from torchmetrics import MeanAbsoluteError
-
+from sklearn import metrics as sk_metrics
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--device',type=str,default='cuda:1',help='')
@@ -46,11 +46,13 @@ args = parser.parse_args()
 
 def train(engine,dataloader):
     dataloader['train_loader'].shuffle()
+    loss_epoch = []
     for step, (x, y) in enumerate(dataloader['train_loader'].get_iterator()):
         train_x = torch.Tensor(x).to(engine.device).transpose(1, 3)
         train_y = torch.Tensor(y).to(engine.device).transpose(1, 3)
-        engine.train(train_x, train_y[:, 0:-1, :, :])
-
+        loss_batch,_,_ = engine.train(train_x, train_y[:, 0:-1, :, :])
+        loss_epoch.append(loss_batch)
+    return np.mean(loss_epoch)
 
 def validate(engine,dataloader):
     for step, (x, y) in enumerate(dataloader['val_loader'].get_iterator()):
@@ -85,33 +87,42 @@ def test(engine,dataloader,model_path):
     print("Training finished")
     # print("The valid loss on best model is", str(round(his_loss[bestid], 4)))
 
-    # 打印出邻接矩阵
-    if args.gcn_bool and engine.model.adj is not None and False:
-        adj = engine.model.adj.to('cpu').numpy()
-
-        adj_min = np.min(adj)
-        adj_max = np.max(adj)
-        adj_avg = np.mean(adj)
-        # print(adj)
-        print('邻接矩阵：min={:.3f},max={:.3f},avg={:.3f}'.format(adj_min,adj_max,adj_avg))
-
-        for i in range(adj.shape[0]):
-            for j in range(adj.shape[1]):
-                print(adj[i][j], end=',')
-            print('')
+    # # 打印出邻接矩阵
+    # if args.gcn_bool and engine.model.adj is not None and False:
+    #     adj = engine.model.adj.to('cpu').numpy()
+    #
+    #     adj_min = np.min(adj)
+    #     adj_max = np.max(adj)
+    #     adj_avg = np.mean(adj)
+    #     # print(adj)
+    #     print('邻接矩阵：min={:.3f},max={:.3f},avg={:.3f}'.format(adj_min,adj_max,adj_avg))
+    #
+    #     for i in range(adj.shape[0]):
+    #         for j in range(adj.shape[1]):
+    #             print(adj[i][j], end=',')
+    #         print('')
 
     # 单维
     if args.in_dim == 2:
         # 计算r，
         # yhat,realy
 
-        # 保存变量
+        # 保存预测值
         preds = scaler.inverse_transform(yhat)
-        save_root = f"data/output/{Config.out_dir}/"
+        if Config.fac_single:
+            save_root = f"data/output/{Config.place}/y/singleWaveNet/{Config.out_dir}/{Config.fac_index}"
+        else:
+            save_root = f"data/output/{Config.place}/y/multiWaveNet/{Config.out_dir}/{Config.fac_index}"
         if not os.path.exists(save_root):
-            os.mkdir(save_root)
-        torch.save(preds,save_root + "preds")
-        torch.save(realy,save_root + "realy")
+            os.makedirs(save_root)
+
+        pred_np = preds.to('cpu').numpy()
+        realy_np = realy.to('cpu').numpy()
+        np.savez_compressed(
+            os.path.join(save_root, f"out.npz"),
+            y_pred=pred_np,
+            y_test=realy_np
+        )
 
 
         # 按照步长计算误差
@@ -126,41 +137,60 @@ def test(engine,dataloader,model_path):
         #     mae_err = MAE_object(preds[:,:,i], realy[:,:,i])
         #     print(f"step={i+1},MAE_ERR={mae_err}")
         #
+        text_output = []
 
-        #
         amae = []
         amape = []
         armse = []
+        ar2 = []
         for i in range(3):
             pred = scaler.inverse_transform(yhat[:, :, i])
             real = realy[:, :, i]
             metrics = util.metric(pred, real)
-            log = 'Evaluate best model on test data for horizon {:d}, Test MAE: {:.4f}, Test MAPE: {:.4f}, Test RMSE: {:.4f}'
-            print(log.format(i + 1, metrics[0], metrics[1], metrics[2]))
+            r2 = sk_metrics.r2_score(real.to('cpu').numpy(),pred.to('cpu').numpy())
+            log = f'horizon {i + 1}, Test MAE: {metrics[0]:.4f}, Test MAPE: {metrics[1]:.4f}, Test RMSE: {metrics[2]:.4f}, Test R2: {r2:.4f}'
+            print(log)
+            text_output.append(log)
             amae.append(metrics[0])
             amape.append(metrics[1])
             armse.append(metrics[2])
+            ar2.append(r2)
 
-        log = 'On average over 3 horizons, Test MAE: {:.4f}, Test MAPE: {:.4f}, Test RMSE: {:.4f}'
-        print(log.format(np.mean(amae), np.mean(amape), np.mean(armse)))
+        log = f'On average over 3 horizons, Test MAE: {np.mean(amae):.4f}, Test MAPE: {np.mean(amape):.4f},' \
+              f' Test RMSE: {np.mean(armse):.4f}, Test R2: {np.mean(ar2):.4f}'
+        print(log)
+        text_output.append(log)
         # torch.save(engine.model.state_dict(),f'{args.save}_exp{}.pth' )
 
-        # 按照站点分别计算
-        amae = []
-        amape = []
-        armse = []
-        for i in range(args.num_nodes):
-            pred = scaler.inverse_transform(yhat[:, i, :])
-            real = realy[:, i, :]
-            metrics = util.metric(pred, real)
-            log = 'Evaluate model on site {:d} , Test MAE: {:.4f}, Test MAPE: {:.4f}, Test RMSE: {:.4f}'
-            print(log.format(i + 1, metrics[0], metrics[1], metrics[2]))
-            amae.append(metrics[0])
-            amape.append(metrics[1])
-            armse.append(metrics[2])
+        # 保存结果到文件
+        if Config.fac_single:
+            save_root = f"data/output/{Config.place}/text/singleWaveNet/{Config.out_dir}/{Config.fac_index}"
+        else:
+            save_root = f"data/output/{Config.place}/text/multiWaveNet/{Config.out_dir}/{Config.fac_index}"
+        if not os.path.exists(save_root):
+            os.makedirs(save_root)
+        fh = open(f'{save_root}/result.txt', 'w', encoding='utf-8')
+        fh.write('\n'.join(text_output))
+        fh.close()
 
-        log = 'On average over all site, Test MAE: {:.4f}, Test MAPE: {:.4f}, Test RMSE: {:.4f}'
-        print(log.format(np.mean(amae), np.mean(amape), np.mean(armse)))
+        # # 按照站点分别计算
+        # amae = []
+        # amape = []
+        # armse = []
+        # for i in range(args.num_nodes):
+        #     pred = scaler.inverse_transform(yhat[:, i, :])
+        #     real = realy[:, i, :]
+        #     metrics = util.metric(pred, real)
+        #     log = 'Evaluate model on site {:d} , Test MAE: {:.4f}, Test MAPE: {:.4f}, Test RMSE: {:.4f}'
+        #     print(log.format(i + 1, metrics[0], metrics[1], metrics[2]))
+        #     text_output.append(log)
+        #     amae.append(metrics[0])
+        #     amape.append(metrics[1])
+        #     armse.append(metrics[2])
+        #
+        # log = 'On average over all site, Test MAE: {:.4f}, Test MAPE: {:.4f}, Test RMSE: {:.4f}'
+        # print(log.format(np.mean(amae), np.mean(amape), np.mean(armse)))
+        # text_output.append(log)
         return np.mean(amae), np.mean(amape), np.mean(armse)
     # 多维
     else:
@@ -172,10 +202,6 @@ def test(engine,dataloader,model_path):
 
 
 def run_once():
-    # set seed
-    # torch.manual_seed(args.seed)
-    # np.random.seed(args.seed)
-
 
     # load data
     device = torch.device(args.device)
@@ -201,7 +227,14 @@ def run_once():
     if args.aptonly:
         supports = None
 
-    model_save_path = "./data/save_models/singFactor/waveNet.pth"
+    if Config.fac_single:
+        save_root = f"data/output/{Config.place}/model/singleWaveNet/{Config.out_dir}/{Config.fac_index}"
+    else:
+        save_root = f"data/output/{Config.place}/model/multiWaveNet/{Config.out_dir}/{Config.fac_index}"
+    if not os.path.exists(save_root):
+        os.makedirs(save_root)
+
+    model_save_path = f'{save_root}/model.pth'
     early_stopping = earlystopping.EarlyStopping(patience=Config.patience, path=model_save_path, verbose=True)
 
     engine = trainer( scaler, args.in_dim, args.seq_length, args.num_nodes, args.nhid, args.dropout,
@@ -210,16 +243,36 @@ def run_once():
 
     print("start training...",flush=True)
 
+    train_loss = []
+    val_loss = []
     for e in range(1,args.epochs+1):
-        train(engine, dataloader)
+        train_loss_epoch = train(engine, dataloader)
+        train_loss.append(train_loss_epoch)
 
-        metrics =validate(engine, dataloader)
-        print("Epoch:{},validate loss:{}".format(e, metrics[0]))
+        val_loss_epoch,_,_ =validate(engine, dataloader)
+        val_loss.append(val_loss_epoch)
+        print("Epoch:{},validate loss:{}".format(e, val_loss_epoch))
 
-        early_stopping(metrics[0],engine.model)
+        early_stopping(val_loss_epoch,engine.model)
         if early_stopping.early_stop:
             print("Early stopping.")
             break
+
+    # 保存loss
+    train_loss = np.array(train_loss)
+    val_loss = np.array(val_loss)
+    if Config.fac_single:
+        save_root = f"data/output/{Config.place}/loss/singleWaveNet/{Config.out_dir}/{Config.fac_index}"
+    else:
+        save_root = f"data/output/{Config.place}/loss/multiWaveNet/{Config.out_dir}/{Config.fac_index}"
+    if not os.path.exists(save_root):
+        os.makedirs(save_root)
+    np.savez_compressed(
+        os.path.join(save_root, f"loss.npz"),
+        train_loss=train_loss,
+        val_loss=val_loss
+    )
+
     return test(engine,dataloader,model_save_path)
 
 
@@ -239,6 +292,8 @@ if __name__ == "__main__":
     args.adjtype = 'doubletransition'
     # 输出维度
     args.seq_length = 3
+    # 输入维度（包括时间维度）
+    args.in_dim = 2
     args.device = Config.device
     args.num_nodes = Config.num_nodes # 图节点数
 
@@ -250,19 +305,17 @@ if __name__ == "__main__":
         args.addaptadj = False
 
     args.epochs = Config.epoch
-    # ######  单因子全站点实验参数
-    args.data = f'data/water/{place}/singleFac/0'
-    args.adjdata = f'data/water/{place}/adjs/adj_all_one.pkl'
-    # 输入维度（包括时间维度）
-    args.in_dim = 2
+    if Config.fac_single:
+        # ######  单因子全站点实验参数
+        args.data = f'data/water/{place}/singleFac/{Config.fac_index}'
+        args.adjdata = f'data/water/{place}/adjs/adj_all_one.pkl'
 
-    # # ######  多因子实验参数（每个因子是一个站点）
-    # args.data = f'data/water/{place}/multiFac'
-    # args.adjdata = f'data/water/{place}/adjs/adj_all_one.pkl'
-    # # 输入维度（包括时间维度）
-    # args.in_dim = 2
-    # # 图节点数
-    # args.num_nodes = 60
+    else:
+        # ######  多因子实验参数（每个因子是一个站点）
+        args.data = f'data/water/{place}/multiFac'
+        args.adjdata = f'data/water/{place}/adjs/adj_all_one.pkl'
+        # 图节点数
+        args.num_nodes = 60
 
     ######  全因子多站点实验参数
     # args.epochs = 1000
@@ -274,11 +327,11 @@ if __name__ == "__main__":
 
     # ############跑1次
 
-
-    t1 = time.time()
-    run_once()
-    t2 = time.time()
-    print("Total time spent: {:.4f}".format(t2 - t1))
+    #
+    # t1 = time.time()
+    # run_once()
+    # t2 = time.time()
+    # print("Total time spent: {:.4f}".format(t2 - t1))
 
 
     # ############跑5次
@@ -299,6 +352,16 @@ if __name__ == "__main__":
 
 
     # ########### 自动进行单因子实验
+    factor_index = [0, 1, 2, 3, 6, 8]
+    for fac in factor_index:
+        Config.fac_index = fac
+        args.data = f'data/water/{place}/singleFac/{Config.fac_index}'
+        run_once()
+
+
+
+
+    # ########### 自动进行单因子实验,没个做5次，取平均值
     # t1 = time.time()
     # result_log = ""
     #
