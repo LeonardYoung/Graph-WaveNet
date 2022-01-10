@@ -45,14 +45,26 @@ def load_waveNet(model='GCNLSTM',place='shangban'):
     return all_test_list, all_pred_list
 
 
+# 返回目前的数据结果名称，用于设置保存的目录名称
+def model_names():
+    return ['bagSVR','RF','noGCNnoLSTM', 'noGCNLSTM', 'GCNnoLSTM', 'GCNLSTM']
+
+# 返回目前的数据结果名称，用于图标标题、论文
+def model_full_names():
+    return ['SVR','RF','WaveNet', 'WaveNet-LSTM', 'WaveNet-MGCN', 'WaveNet-LSTM-MGCN']
+
 # 加载保存的所有模型预测值和真实值，返回两个np的shape都是(5, 6, 3, 3610)，分别为模型维，因子维，步长维，数据维
 def load_all_y(place='shangban'):
     all_test_list = []
     all_pred_list = []
-    svr_y_test, svr_y_pred = load_shallow(place=place)
 
+    svr_y_test, svr_y_pred = load_shallow(place=place)
     all_test_list.append(svr_y_test)
     all_pred_list.append(svr_y_pred)
+
+    rf_y_test, rf_y_pred = load_shallow(type='RF',place=place)
+    all_test_list.append(rf_y_test)
+    all_pred_list.append(rf_y_pred)
 
     model_dirs = ['noGCNnoLSTM', 'noGCNLSTM', 'GCNnoLSTM', 'GCNLSTM']
 
@@ -66,4 +78,55 @@ def load_all_y(place='shangban'):
     return all_test_list, all_pred_list
 
 
+def np_rmspe(y_true, y_pred):
+    loss = np.sqrt(np.mean(np.square(((y_true - y_pred) / y_true)), axis=0))
+    return loss
 
+
+# 打印出指定模型的所有metric
+def model_metric(model_idx = 0):
+    # import water.common as water_common
+    # from water.common import np_rmspe
+    from sklearn import metrics
+    from scipy.stats import pearsonr
+    factors_use_en = ['pH', 'TN', 'TP', 'NH$_3$', 'DO', 'CODmn']
+    factors_use = ['pH值', '总氮', '总磷', '氨氮', '溶解氧', '高锰酸盐指数']
+
+    all_test, all_pred = load_all_y()
+
+    mae_list = []
+    mape_list = []
+    rmse_list = []
+    rmspe_list = []
+    r2_list = []
+    r_list = []
+
+    # 遍历每个因子
+    for fac_idx in range(all_test.shape[1]):
+        for step in range(3):
+            y_test_t = all_test[model_idx, fac_idx, step, :]
+            y_pred_t = all_pred[model_idx, fac_idx, step, :]
+
+            mae = metrics.mean_absolute_error(y_test_t, y_pred_t)
+            mape = metrics.mean_absolute_percentage_error(y_test_t, y_pred_t)
+            rmse = metrics.mean_squared_error(y_test_t, y_pred_t) ** 0.5
+            rmspe = np_rmspe(y_test_t, y_pred_t)
+            r2 = metrics.r2_score(y_test_t, y_pred_t)
+            r = pearsonr(y_test_t, y_pred_t)[0]
+
+            print(f'{factors_use[fac_idx]}{step}th,{mae:.3f},{mape:.3f},'
+                  f'{rmse:.3f},{rmspe:.3f},{r2:.3f},{r:.3f}')
+            # break
+            # break
+
+            mae_list.append(mae)
+            mape_list.append(mape)
+            rmse_list.append(rmse)
+            rmspe_list.append(rmspe)
+            r_list.append(r)
+            r2_list.append(r2)
+
+    # 计算平均值
+    print(f'平均,{np.mean(mae_list):.4f},{np.mean(mape_list):.4f},'
+          f'{np.mean(rmse_list):.4f},{np.mean(rmspe_list):.4f},'
+          f'{np.mean(r2_list):.4f},{np.mean(r_list):.4f}')
