@@ -1,6 +1,13 @@
 import numpy as np
 from water.SVR.data_generate import merge_site
 
+# 所有因子
+factors = ['pH值', '总氮', '总磷', '氨氮', '水温', '浑浊度', '溶解氧', '电导率', '高锰酸盐指数']
+factors_en = ['pH', 'TN', 'TP', 'NH$_3$', '水温', '浑浊度', 'DO', '电导率', 'CODmn']
+
+# 有使用的因子
+factors_use_en = ['pH', 'TN', 'TP', 'NH$_3$', 'DO', 'CODmn']
+factors_use = ['pH值', '总氮', '总磷', '氨氮', '溶解氧', '高锰酸盐指数']
 
 # 加载保存的模型预测值和真实值，仅限于浅层模型
 def load_shallow(type='BagSVR',place='shangban'):
@@ -79,8 +86,14 @@ def load_all_y(place='shangban'):
 
 
 def np_rmspe(y_true, y_pred):
-    loss = np.sqrt(np.mean(np.square(((y_true - y_pred) / y_true)), axis=0))
+    loss = np.sqrt(np.mean(np.square(((y_true - y_pred) / (y_true + np.mean(y_true)))), axis=0))
     return loss
+
+
+# 计算mape，公式经过更改。每次除以标签值加上所有标签的均值，最后结果乘以2
+def np_mape(y_true, y_pred):
+    loss = np.abs(y_true - y_pred) / (y_true + np.mean(y_true))
+    return np.mean(loss) * 2
 
 
 # 打印出指定模型的所有metric
@@ -108,9 +121,11 @@ def model_metric(model_idx = 0):
             y_pred_t = all_pred[model_idx, fac_idx, step, :]
 
             mae = metrics.mean_absolute_error(y_test_t, y_pred_t)
-            mape = metrics.mean_absolute_percentage_error(y_test_t, y_pred_t)
+            # mape = metrics.mean_absolute_percentage_error(y_test_t, y_pred_t)
+            mape = np_mape(y_test_t,y_pred_t)
             rmse = metrics.mean_squared_error(y_test_t, y_pred_t) ** 0.5
             rmspe = np_rmspe(y_test_t, y_pred_t)
+            # rmspe2 = masked_rmspe(y_test_t,y_pred_t)
             r2 = metrics.r2_score(y_test_t, y_pred_t)
             r = pearsonr(y_test_t, y_pred_t)[0]
 
@@ -127,6 +142,21 @@ def model_metric(model_idx = 0):
             r2_list.append(r2)
 
     # 计算平均值
-    print(f'平均,{np.mean(mae_list):.4f},{np.mean(mape_list):.4f},'
-          f'{np.mean(rmse_list):.4f},{np.mean(rmspe_list):.4f},'
-          f'{np.mean(r2_list):.4f},{np.mean(r_list):.4f}')
+    print(f'平均,{np.mean(mae_list):.3f},{np.mean(mape_list):.3f},'
+          f'{np.mean(rmse_list):.3f},{np.mean(rmspe_list):.3f},'
+          f'{np.mean(r2_list):.3f},{np.mean(r_list):.3f}')
+
+
+# 打印出上坂每个因子的统计数据
+def print_statics():
+    import pandas as pd
+    df = pd.read_csv('water/temp/4.csv')
+    print(df.columns)
+    print('min,max,mean,std,skew,kurt')
+    for col in df.columns[3:12]:
+        print(f'{col},{df[col].min():.3f},{df[col].max():.3f},{df[col].mean():.3f}'
+              f',{df[col].std():.3f},{df[col].skew():.3f},{df[col].kurt():.3f}')
+
+
+if __name__ == '__main__':
+    model_metric(2)
