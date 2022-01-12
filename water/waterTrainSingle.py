@@ -87,20 +87,32 @@ def test(engine,dataloader,model_path):
     print("Training finished")
     # print("The valid loss on best model is", str(round(his_loss[bestid], 4)))
 
-    # # 打印出邻接矩阵
-    # if args.gcn_bool and engine.model.adj is not None and False:
-    #     adj = engine.model.adj.to('cpu').numpy()
-    #
-    #     adj_min = np.min(adj)
-    #     adj_max = np.max(adj)
-    #     adj_avg = np.mean(adj)
-    #     # print(adj)
-    #     print('邻接矩阵：min={:.3f},max={:.3f},avg={:.3f}'.format(adj_min,adj_max,adj_avg))
-    #
-    #     for i in range(adj.shape[0]):
-    #         for j in range(adj.shape[1]):
-    #             print(adj[i][j], end=',')
-    #         print('')
+    # 打印出邻接矩阵
+    if args.gcn_bool and engine.model.adj is not None:
+        adj = engine.model.adj.to('cpu').numpy()
+
+        adj_min = np.min(adj)
+        adj_max = np.max(adj)
+        adj_avg = np.mean(adj)
+        print(adj)
+        print('邻接矩阵：min={:.3f},max={:.3f},avg={:.3f}'.format(adj_min,adj_max,adj_avg))
+
+        for i in range(adj.shape[0]):
+            for j in range(adj.shape[1]):
+                print(adj[i][j], end=',')
+            print('')
+
+        # 保存下来
+        if Config.fac_single:
+            save_root = f"data/output/{Config.place}/adj/singleWaveNet/{Config.out_dir}/{Config.fac_index}"
+        else:
+            save_root = f"data/output/{Config.place}/adj/multiWaveNet/{Config.out_dir}/{Config.fac_index}"
+        if not os.path.exists(save_root):
+            os.makedirs(save_root)
+        np.savez_compressed(
+            f'{save_root}/adj.npz',
+            adj=adj,
+        )
 
     # 单维
     if args.in_dim == 2:
@@ -352,6 +364,7 @@ if __name__ == "__main__":
 
 
     # ########### 自动进行单因子实验
+    # factor_index = [0]
     factor_index = [0, 1, 2, 3, 6, 8]
     for fac in factor_index:
         Config.fac_index = fac

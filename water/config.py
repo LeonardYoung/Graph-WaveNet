@@ -16,17 +16,18 @@ device = 'cuda:1'
 # adj_learn_type = 'gcnOfficial'       # 节点嵌入 + 权重矩阵
 # 模型选择
 gcn_bool = True
-# adj_learn_type = 'weigthed'       # 节点嵌入 + 权重矩阵
-adj_learn_type = 'embed'            # 节点嵌入算法
-subGraph = False # 子图，先用图处理同站点间的多维因子融合，再处理不同站点间同因子融合
-use_LSTM = False
+adj_learn_type = 'weigthed'       # 节点嵌入 + 权重矩阵
+# adj_learn_type = 'embed'            # 节点嵌入算法
+subGraph = True # 子图，先用图处理同站点间的多维因子融合，再处理不同站点间同因子融合
+use_LSTM = True
 
 # 输入配置
-fac_index = 1 # 单因子模式下，输入的因子类型
+fac_index = 0 # 单因子模式下，输入的因子下标，factors = ['pH值', '总氮', '总磷', '氨氮', '水温', '浑浊度', '溶解氧', '电导率', '高锰酸盐指数']
 fac_single = True # True为单因子，FALSE为多因子，每个因子是一个站点
 
 # 输出配置
-out_dir = 'embedGCN'
+# 输出数据的保存文件夹名
+out_dir = 'GCNLSTM'
 
 num_factors = 6     # 因子数量
 num_nodes = 10      # 站点数量

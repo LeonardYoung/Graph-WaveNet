@@ -49,7 +49,7 @@ class gcnWeight(nn.Module):
     def __init__(self,c_in,c_out,dropout,support_len,order,num_nodes,device,gcn_site_type=True):
         super(gcnWeight,self).__init__()
         self.nconv = nconv()
-        if Config.subGraph:
+        if (not Config.fac_single) and Config.subGraph:
             c_in = (order*support_len+2)*c_in
         else:
             c_in = (order * support_len + 1) * c_in
@@ -62,7 +62,7 @@ class gcnWeight(nn.Module):
         self.weight2 = nn.Parameter(torch.randn(num_nodes, num_nodes).to(device), requires_grad=True).to(device)
 
         # 用于描述因子间相互作用的邻接矩阵
-        if Config.subGraph:
+        if (not Config.fac_single) and Config.subGraph:
             vec_length = 32
             self.nodevec1 = nn.Parameter(torch.randn(Config.num_factors, vec_length).to(device), requires_grad=True).to(device)
             self.nodevec2 = nn.Parameter(torch.randn(vec_length, Config.num_factors).to(device), requires_grad=True).to(device)
@@ -110,8 +110,8 @@ class gcnWeight(nn.Module):
                 out.append(x2)
                 x1 = x2
 
-            # 因子子图!!
-            if Config.subGraph:
+            # 多因子时考虑因子子图!!
+            if (not Config.fac_single) and Config.subGraph:
                 fac_out = []
                 adp = F.softmax(F.relu(torch.mm(self.nodevec1, self.nodevec2)), dim=1)
                 wa_f = torch.mm(self.weight_factor, adp)
@@ -132,6 +132,7 @@ class gcnWeight(nn.Module):
                 # h = fac_out
             else:
                 h = torch.cat(out,dim=1)
+
             h = self.mlp(h)
             h = F.dropout(h, self.dropout, training=self.training)
         return h
