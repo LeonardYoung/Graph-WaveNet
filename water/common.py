@@ -97,7 +97,7 @@ def np_mape(y_true, y_pred):
 
 
 # 打印出指定模型的所有metric
-def model_metric(model_idx = 0):
+def model_metric(model_idx = 0,place='shangban'):
     # import water.common as water_common
     # from water.common import np_rmspe
     from sklearn import metrics
@@ -105,7 +105,7 @@ def model_metric(model_idx = 0):
     factors_use_en = ['pH', 'TN', 'TP', 'NH$_3$', 'DO', 'CODmn']
     factors_use = ['pH值', '总氮', '总磷', '氨氮', '溶解氧', '高锰酸盐指数']
 
-    all_test, all_pred = load_all_y()
+    all_test, all_pred = load_all_y(place)
 
     mae_list = []
     mape_list = []
@@ -148,9 +148,9 @@ def model_metric(model_idx = 0):
 
 
 # 打印出上坂每个因子的统计数据
-def print_statics():
+def print_statics(ch='4'):
     import pandas as pd
-    df = pd.read_csv('water/temp/4.csv')
+    df = pd.read_csv(f'water/temp/{ch}.csv')
     print(df.columns)
     print('min,max,mean,std,skew,kurt')
     for col in df.columns[3:12]:

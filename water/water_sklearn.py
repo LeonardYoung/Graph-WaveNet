@@ -61,7 +61,7 @@ def run_one_fac(fac_index,model_name,regresstor,place = 'shangban'):
     # place = 'shangban'
 
     x_train, y_train, x_val, y_val, x_test, y_test = \
-        data_generate.load_single_data(fac_index=fac_index, y_bool=False, y_length=3)
+        data_generate.load_single_data(place=place, fac_index=fac_index, y_bool=False, y_length=3)
 
     # maes=[]
     # 每个步长分别预测

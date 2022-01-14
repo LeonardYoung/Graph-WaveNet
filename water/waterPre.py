@@ -47,7 +47,7 @@ def merge_one_factor(ids,input_file, inc ,out_dir):
     file_name = out_dir + '/merge' + str(inc)
     merge.to_hdf(file_name+'.h5', key='merge', index=False)
     merge.to_csv(file_name+'.csv')
-    return file_name
+    return file_name+ '.h5'
 
 
 def generate_multi_factor(input_file,root_dir,include_site,include_factor,seq_length_x,seq_length_y):
@@ -450,13 +450,8 @@ def generate_data(input_csv, output_dir,site_num,factor_num,seq_length_x, seq_le
 
 if __name__ == "__main__":
 
-    # place = 'changtai'
-    place = 'shangban'
-
-    #### 生成单站点单因子数据集
-    # for site in range(len(ids_shangban)):
-    #     for factor in range(len(factors)):
-    #         generate_one_site_one_factor('../data/water/shangban', '/singleFac','/singlesingle', factor,site,24,3)
+    place = 'changtai'
+    # place = 'shangban'
 
 
 
@@ -469,31 +464,26 @@ if __name__ == "__main__":
 
     # 长泰
     # for i in range(9):
-    #     file_name = merge_one_factor(ids_changtai ,'../data/water/changtai/water_24H.csv',
-    #                                  i, '../data/water/changtai/daySingleFac')
-    #     generate_dataset(file_name,'../data/water/changtai/daySingleFac/'+str(i)+'/',24,3)
+    #     file_name = merge_one_factor(ids_changtai ,'../data/water/changtai/water_4H.csv',
+    #                                  i, '../data/water/changtai/singleFac')
+    #     generate_dataset(file_name,'../data/water/changtai/singleFac/'+str(i)+'/',24,3)
 
 
     # ####### 生成多因子数据集（每个因子是一个节点）
     # 上坂
-    generate_multi_factor('../data/water/shangban/water_4H.csv','../data/water/shangban/multiFac',
-                          ids_shangban,[0,1,2,3,6,8],
-                          24,3)
+    # generate_multi_factor('../data/water/shangban/water_4H.csv','../data/water/shangban/multiFac',
+    #                       ids_shangban,[0,1,2,3,6,8],
+    #                       24,3)
 
     # get_adj_file('../data/water/shangban', 60,'adj_60_8eye_one.pkl')
 
     # 长泰
-    # generate_multi_factor('../data/water/changtai/water_4H.csv', '../data/water/changtai/multiFac',
-    #                       ids_changtai, [0, 1, 2, 3, 6, 8],
-    #                       24, 3)
+    generate_multi_factor('../data/water/changtai/water_4H.csv', '../data/water/changtai/multiFac',
+                          ids_changtai, [0, 1, 2, 3, 6, 8],
+                          24, 3)
 
     # get_adj_file(f'../data/water/{place}', 7, 'adj_all_one.pkl')
 
 
-    # ######## 生成全站点多因子数据集！！（多维变量）
-    # merge_all_factor(f'../data/water/{place}/water_24H.csv', f'../data/water/{place}/allDay/mergeAll.h5',
-    #                  ids_shangban,[0,1,2,3,6,8])
-    # generate_data(f'../data/water/{place}/allDay/mergeAll.h5', f'../data/water/{place}/allDay',
-    #               site_num = 10,factor_num=6,seq_length_x=24, seq_length_y=3)
 
     pass

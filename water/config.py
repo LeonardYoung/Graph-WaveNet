@@ -1,6 +1,6 @@
 
-# place = 'changtai'
-place = 'shangban'
+place = 'changtai'
+# place = 'shangban'
 seed = 42
 epoch = 2000
 patience = 50
@@ -22,20 +22,25 @@ subGraph = True # 子图，先用图处理同站点间的多维因子融合，�
 use_LSTM = True
 
 # 输入配置
+fac_single = False # True为单因子，FALSE为多因子，每个因子是一个站点
 fac_index = 0 # 单因子模式下，输入的因子下标，factors = ['pH值', '总氮', '总磷', '氨氮', '水温', '浑浊度', '溶解氧', '电导率', '高锰酸盐指数']
-fac_single = True # True为单因子，FALSE为多因子，每个因子是一个站点
 
 # 输出配置
 # 输出数据的保存文件夹名
 out_dir = 'GCNLSTM'
+# out_dir = 'GCNnoLSTM'
+# out_dir = 'noGCNLSTM'
+# out_dir = 'noGCNnoLSTM'
 
 num_factors = 6     # 因子数量
 num_nodes = 10      # 站点数量
 input_data_len = 24 # 输入数据的特征长度
 if place == 'changtai':
     num_nodes = 7
-elif place == 'changban':
+    num_site = 7  # 站点数量
+elif place == 'shangban':
     num_nodes = 10
+    num_site = 10  # 站点数量
 
 def print_all():
     print(f'adj_learn_type={adj_learn_type}\ngcn_bool={gcn_bool}\nuse_LSTM={use_LSTM}')
