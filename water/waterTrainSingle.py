@@ -340,11 +340,11 @@ if __name__ == "__main__":
     # ############跑1次
 
 
-    t1 = time.time()
-    run_once()
-    t2 = time.time()
-    print("Total time spent: {:.4f}".format(t2 - t1))
-
+    # t1 = time.time()
+    # run_once()
+    # t2 = time.time()
+    # print("Total time spent: {:.4f}".format(t2 - t1))
+    #
 
     # ############跑5次
     # t1 = time.time()
@@ -364,14 +364,14 @@ if __name__ == "__main__":
 
 
     # ########### 自动进行单因子实验
-    # # factor_index = [0]
+    factor_index = [0]
     # factor_index = [0, 1, 2, 3, 6, 8]
-    # for fac in factor_index:
-    #     Config.fac_index = fac
-    #     args.data = f'data/water/{place}/singleFac/{Config.fac_index}'
-    #     run_once()
-    #
-    #
+    for fac in factor_index:
+        Config.fac_index = fac
+        args.data = f'data/water/{place}/singleFac/{Config.fac_index}'
+        run_once()
+
+
 
 
     # ########### 自动进行单因子实验,没个做5次，取平均值

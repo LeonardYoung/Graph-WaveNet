@@ -1,6 +1,6 @@
 
-place = 'changtai'
-# place = 'shangban'
+# place = 'changtai'
+place = 'shangban'
 seed = 42
 epoch = 2000
 patience = 50
@@ -18,16 +18,17 @@ device = 'cuda:1'
 gcn_bool = True
 adj_learn_type = 'weigthed'       # 节点嵌入 + 权重矩阵
 # adj_learn_type = 'embed'            # 节点嵌入算法
-subGraph = True # 子图，先用图处理同站点间的多维因子融合，再处理不同站点间同因子融合
+subGraph = False # 子图，先用图处理同站点间的多维因子融合，再处理不同站点间同因子融合
 use_LSTM = True
 
 # 输入配置
-fac_single = False # True为单因子，FALSE为多因子，每个因子是一个站点
+fac_single = True # True为单因子，FALSE为多因子，每个因子是一个站点
 fac_index = 0 # 单因子模式下，输入的因子下标，factors = ['pH值', '总氮', '总磷', '氨氮', '水温', '浑浊度', '溶解氧', '电导率', '高锰酸盐指数']
 
 # 输出配置
 # 输出数据的保存文件夹名
-out_dir = 'GCNLSTM'
+out_dir = 'tempModel'
+# out_dir = 'GCNLSTM'
 # out_dir = 'GCNnoLSTM'
 # out_dir = 'noGCNLSTM'
 # out_dir = 'noGCNnoLSTM'

@@ -398,6 +398,8 @@ class gwnet(nn.Module):
                     vec_length = num_nodes
 
                 # 多因子子图
+                # 这个是因子掩码
+                self.factor_masks = []
                 if (not Config.fac_single) and Config.subGraph:
                     # 这个子图用于描述站点内不同因子的相互作用
                     self.nodevec1_insider = nn.Parameter(torch.randn(Config.num_factors, vec_length).to(device), requires_grad=True).to(device)
@@ -406,8 +408,7 @@ class gwnet(nn.Module):
                     # 这些子图用于描述不同站点间同因子的相互作用，每个因子分别有一张图
                     self.nodevec1_cross = []
                     self.nodevec2_cross = []
-                    # 这个是因子掩码
-                    self.factor_masks = []
+
 
                     for i in range(Config.num_factors):
                         # 创建子图向量

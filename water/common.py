@@ -152,6 +152,7 @@ def print_statics(ch='4'):
     import pandas as pd
     df = pd.read_csv(f'water/temp/{ch}.csv')
     print(df.columns)
+    print(len(df))
     print('min,max,mean,std,skew,kurt')
     for col in df.columns[3:12]:
         print(f'{col},{df[col].min():.3f},{df[col].max():.3f},{df[col].mean():.3f}'
